@@ -112,7 +112,6 @@ resource "null_resource" "boot_copy_files" {
     host = "${azurerm_public_ip.bootnode_pip.ip_address}"
     user = "${var.admin_username}"
     password = "${var.admin_password}"
-    private_key = "${file(var.ssh_private_key_path)}"
   }
 
   provisioner "file" {
