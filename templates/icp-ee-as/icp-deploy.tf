@@ -15,11 +15,12 @@ locals {
 
   # Inception image formatted for ICP deploy module
   inception_image = "${local.cred_reg != "" ? join("/", list("${local.cred_reg}"), list("${var.icp_inception_image}")) : var.icp_inception_image}"
-
+  ssh_user = "icpdeploy"
+  ssh_key = "${tls_private_key.installkey.private_key_pem}"
 }
 
 module "icpprovision" {
-  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.7"
+  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.2"
 
   bastion_host = "${azurerm_public_ip.bootnode_pip.ip_address}"
 
@@ -60,6 +61,7 @@ module "icpprovision" {
     "docker_password"           = "${var.registry_password}"
 
     # An admin password will be generated if not supplied in terraform.tfvars
+    # TODO REMOVE "default_admin_password"          = "${local.icppassword}"
     "default_admin_password"    = "${var.icpadmin_password}"
     # This is the list of disabled management services
     "management_services"       = "${local.disabled_management_services}"
@@ -69,8 +71,8 @@ module "icpprovision" {
     "kubelet_nodename"          = "nodename"
     "cloud_provider"            = "azure"
 
-    # Azure specific arguments
-    "kube_controller_manager_extra_args" = ["--allocate-node-cidrs=true", "--feature-gates=ServiceNodeExclusion=true"]
+    # If you want to use calico in policy only mode and Azure routed routes.
+    "kube_controller_manager_extra_args" = ["--allocate-node-cidrs=true"]
     "kubelet_extra_args" = ["--enable-controller-attach-detach=true"]
 
     # Azure specific configurations
@@ -108,7 +110,7 @@ module "icpprovision" {
           "aadClientId"         = "${var.aadClientId}"
           "aadClientSecret"     = "${var.aadClientSecret}"
           "location"            = "${azurerm_resource_group.icp.location}"
-          "subnetName"          = "${element(compact(concat(list("${var.container_subnet_id}"), azurerm_subnet.container_subnet.*.id)), 0)}"
+          "subnetName"          = "${azurerm_subnet.container_subnet.name}"
           "vnetName"            = "${azurerm_virtual_network.icp_vnet.name}"
           "vnetResourceGroup"   = "${azurerm_resource_group.icp.name}"
           "routeTableName"      = "${azurerm_route_table.routetb.name}"
@@ -127,7 +129,18 @@ module "icpprovision" {
 
   generate_key = true
 
-  ssh_user         = "icpdeploy"
-  ssh_key_base64   = "${base64encode(tls_private_key.installkey.private_key_pem)}"
+  image_location   = "${var.image_location}"
+  ssh_user         = "${local.ssh_user}"
+  ssh_key_base64   = "${base64encode(local.ssh_key)}"
+  ssh_agent	   = "false"
 
+  hooks = {
+    "cluster-preconfig"  = ["echo -n"]
+    "cluster-postconfig" = ["echo -n"]
+    "boot-preconfig"     = ["echo -n"]
+    "preinstall"         = [
+      "sudo bash -x  /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' '${var.nfsmount}'"
+    ]
+    "postinstall"	 = ["echo -n"]
+  }
 }

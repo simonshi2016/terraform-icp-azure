@@ -3,9 +3,12 @@
 ##################################
 # Details about authentication options here: https://www.terraform.io/docs/providers/azurerm
 
-provider "azurerm" { }
-
-
+provider "azurerm" { 
+  client_id = "${var.aadClientId}"
+  client_secret = "${var.aadClientSecret}"
+  subscription_id = "${var.subscription_id}"
+  tenant_id = "${var.tenant_id}" 
+}
 
 ##################################
 ## Create a resource group

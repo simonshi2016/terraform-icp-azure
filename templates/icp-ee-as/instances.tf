@@ -93,6 +93,7 @@ resource "azurerm_virtual_machine" "boot" {
   os_profile {
     computer_name  = "${var.boot["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
+    admin_password = "${var.admin_password}"
     custom_data    = "${data.template_cloudinit_config.bootconfig.rendered}"
   }
 
@@ -105,6 +106,20 @@ resource "azurerm_virtual_machine" "boot" {
   }
 }
 
+resource "null_resource" "boot_copy_files" {
+  depends_on = ["azurerm_virtual_machine.boot"]
+  connection {
+    host = "${azurerm_public_ip.bootnode_pip.ip_address}"
+    user = "${var.admin_username}"
+    password = "${var.admin_password}"
+    private_key = "${file(var.ssh_private_key_path)}"
+  }
+
+  provisioner "file" {
+    source = "./generate_wdp_conf.sh"
+    destination = "/tmp/generate_wdp_conf.sh"
+  }
+}
 
 ##################################
 ## Create Master VM
@@ -135,7 +150,7 @@ resource "azurerm_virtual_machine" "master" {
   storage_os_disk {
     name              = "${var.master["name"]}-osdisk-${count.index + 1}"
     managed_disk_type = "${var.master["os_disk_type"]}"
-    disk_size_gb      = "${var.master["docker_disk_size"]}"
+    disk_size_gb      = "${var.master["os_disk_size"]}"
     caching           = "ReadWrite"
     create_option     = "FromImage"
   }
@@ -170,9 +185,20 @@ resource "azurerm_virtual_machine" "master" {
     lun               = 3
   }
 
+ # data disk
+  storage_data_disk {
+    name              = "${var.master["name"]}-ibm-${count.index + 1}"
+    managed_disk_type = "${var.master["ibm_disk_type"]}"
+    disk_size_gb      = "${var.master["ibm_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 4 
+  }
+
   os_profile {
     computer_name  = "${var.master["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
+    admin_password = "${var.admin_password}"
     custom_data    = "${data.template_cloudinit_config.masterconfig.rendered}"
   }
 
@@ -231,6 +257,7 @@ resource "azurerm_virtual_machine" "proxy" {
   os_profile {
     computer_name  = "${var.proxy["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
+    admin_password = "${var.admin_password}"
     custom_data    = "${data.template_cloudinit_config.workerconfig.rendered}"
   }
 
@@ -288,6 +315,7 @@ resource "azurerm_virtual_machine" "management" {
   os_profile {
     computer_name  = "${var.management["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
+    admin_password = "${var.admin_password}"
     custom_data    = "${data.template_cloudinit_config.workerconfig.rendered}"
   }
 
@@ -330,22 +358,33 @@ resource "azurerm_virtual_machine" "worker" {
   storage_os_disk {
     name              = "${var.worker["name"]}-osdisk-${count.index + 1}"
     managed_disk_type = "${var.worker["os_disk_type"]}"
+    disk_size_gb      = "${var.worker["os_disk_size"]}"
     caching           = "ReadWrite"
     create_option     = "FromImage"
   }
 
-  # storage_data_disk {
-  #   name              = "${var.worker["name"]}-dockerdisk-${count.index + 1}"
-  #   managed_disk_type = "${var.worker["docker_disk_type"]}"
-  #   disk_size_gb      = "${var.worker["docker_disk_size"]}"
-  #   caching           = "ReadWrite"
-  #   create_option     = "Empty"
-  #   lun               = 1
-  # }
+  storage_data_disk {
+    name              = "${var.worker["name"]}-dockerdisk-${count.index + 1}"
+    managed_disk_type = "${var.worker["docker_disk_type"]}"
+    disk_size_gb      = "${var.worker["docker_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 1
+  }
+
+  storage_data_disk {
+    name              = "${var.worker["name"]}-datadisk-${count.index + 1}"
+    managed_disk_type = "${var.worker["data_disk_type"]}"
+    disk_size_gb      = "${var.worker["data_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 2
+  }
 
   os_profile {
     computer_name  = "${var.worker["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
+    admin_password = "${var.admin_password}"
     custom_data    = "${data.template_cloudinit_config.workerconfig.rendered}"
   }
 
@@ -357,3 +396,4 @@ resource "azurerm_virtual_machine" "worker" {
     }
   }
 }
+

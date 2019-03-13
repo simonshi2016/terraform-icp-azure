@@ -9,7 +9,7 @@ data "template_file" "common_config" {
     - python-yaml
   users:
     - default
-    - name: icpdeploy
+    - name: icpdeploy 
       groups: [ wheel ]
       sudo: [ "ALL=(ALL) NOPASSWD:ALL" ]
       shell: /bin/bash
@@ -26,7 +26,15 @@ sudo mkdir -p /var/lib/docker
 if [ -e /dev/sdc ]; then
   sudo parted -s -a optimal /dev/disk/azure/scsi1/lun1 mklabel gpt -- mkpart primary xfs 1 -1
   sudo partprobe
-  sudo mkfs.xfs -n ftype=1 /dev/disk/azure/scsi1/lun1-part1
+  retry=3
+  while [ $retry -gt 0 ];
+  do
+    if sudo mkfs.xfs -n ftype=1 /dev/disk/azure/scsi1/lun1-part1;then
+      break
+    fi
+    sleep 2
+    retry=$((retry-1))
+  done
   echo "/dev/disk/azure/scsi1/lun1-part1  /var/lib/docker   xfs  defaults   0 0" | sudo tee -a /etc/fstab
 else
   # Use the temporary disk
@@ -49,13 +57,76 @@ sudo parted -s -a optimal $etcddisk mklabel gpt -- mkpart primary xfs 1 -1
 sudo parted -s -a optimal $waldisk mklabel gpt -- mkpart primary xfs 1 -1
 sudo partprobe
 
-sudo mkfs.xfs -n ftype=1 $etcddisk-part1
-sudo mkfs.xfs -n ftype=1 $waldisk-part1
+retry=3
+while [ $retry -gt 0 ];
+do 
+  if sudo mkfs.xfs -n ftype=1 $etcddisk-part1;then
+    break
+  fi
+  sleep 2
+  retry=$((retry-1))
+done
+
+retry=3
+while [ $retry -gt 0 ];
+do 
+  if sudo mkfs.xfs -n ftype=1 $waldisk-part1;then
+    break
+  fi
+  retry=$((retry-1))
+done
 echo "$etcddisk-part1  /var/lib/etcd   xfs  defaults   0 0" | sudo tee -a /etc/fstab
 echo "$waldisk-part1  /var/lib/etcd-wal   xfs  defaults   0 0" | sudo tee -a /etc/fstab
 
 sudo mount /var/lib/etcd
 sudo mount /var/lib/etcd-wal
+EOF
+}
+
+data "template_file" "ibm_disk" {
+  template = <<EOF
+#!/bin/bash
+sudo mkdir /ibm
+datadisk=$(ls /dev/disk/azure/*/lun4)
+
+sudo parted -s -a optimal $datadisk mklabel gpt -- mkpart primary xfs 1 -1
+sudo partprobe
+
+retry=3
+while [ $retry -gt 0 ];
+do 
+  if sudo mkfs.xfs -n ftype=1 $datadisk-part1;then
+    break
+  fi
+  sleep 2
+  retry=$((retry-1))
+done
+echo "$datadisk-part1  /ibm   xfs  defaults   0 0" | sudo tee -a /etc/fstab
+sudo mount /ibm
+EOF
+}
+
+data "template_file" "data_disk" {
+  template = <<EOF
+#!/bin/bash
+sudo mkdir /ibm
+sudo mkdir /data
+datadisk=$(ls /dev/disk/azure/*/lun2)
+
+sudo parted -s -a optimal $datadisk mklabel gpt -- mkpart primary xfs 1 -1
+sudo partprobe
+
+retry=3
+while [ $retry -gt 0 ];
+do 
+  if sudo mkfs.xfs -n ftype=1 $datadisk-part1;then
+    break
+  fi
+  sleep 2
+  retry=$((retry-1))
+done
+echo "$datadisk-part1  /data   xfs  defaults   0 0" | sudo tee -a /etc/fstab
+sudo mount /data
 EOF
 }
 
@@ -90,6 +161,7 @@ EOF
 }
 
 data "template_file" "master_config" {
+
   template = <<EOF
 #cloud-config
 write_files:
@@ -99,7 +171,6 @@ write_files:
     password=$${password}
 mounts:
 - [ ${element(split(":", azurerm_storage_share.icpregistry.url), 1)}, /var/lib/registry, cifs, "nofail,credentials=/etc/smbcredentials/icpregistry.cred,dir_mode=0777,file_mode=0777,serverino" ]
-
 EOF
 
   vars {
@@ -108,6 +179,17 @@ EOF
     tarball = "${var.image_location}"
     key     = "${var.image_location_key}"
   }
+}
+
+data "template_file" "master_script" {
+  template = <<EOF
+#!/bin/bash
+while ! sudo mount | grep '/var/lib/registry' > /dev/null 2>&1;
+do
+  sudo mount /var/lib/registry
+  sleep 2
+done
+EOF
 }
 
 data "template_cloudinit_config" "bootconfig" {
@@ -127,10 +209,10 @@ data "template_cloudinit_config" "bootconfig" {
   }
 
   # Load the ICP Images
-  part {
-    content_type = "text/x-shellscript"
-    content      = "${var.image_location != "" ? data.template_file.load_tarball.rendered : "#!/bin/bash"}"
-  }
+#  part {
+#    content_type = "text/x-shellscript"
+#    content      = "${var.image_location != "" ? data.template_file.load_tarball.rendered : "#!/bin/bash"}"
+#  }
 
 }
 
@@ -156,18 +238,28 @@ data "template_cloudinit_config" "masterconfig" {
     content      = "${data.template_file.etcd_disk.rendered}"
   }
 
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${data.template_file.ibm_disk.rendered}"
+  }
+
   # Setup the icp registry share
   part {
     content_type = "text/cloud-config"
     content      =  "${data.template_file.master_config.rendered}"
   }
 
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${data.template_file.master_script.rendered}"
+  }
+
   ### Don't load the tarball on masters for now
-  # # Load the ICP Images
-  # part {
-  #   content_type = "text/x-shellscript"
-  #   content      = "${data.template_file.load_tarball.rendered}"
-  # }
+  # Load the ICP Images
+  #part {
+  #  content_type = "text/x-shellscript"
+  #  content      = "${var.image_location != "" ? data.template_file.load_tarball.rendered : "#!/bin/bash"}"
+  #}
 }
 
 data "template_cloudinit_config" "workerconfig" {
@@ -185,4 +277,10 @@ data "template_cloudinit_config" "workerconfig" {
     content_type = "text/x-shellscript"
     content      = "${data.template_file.docker_disk.rendered}"
   }
+
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${data.template_file.data_disk.rendered}"
+  }
 }
+
