@@ -138,9 +138,9 @@ module "icpprovision" {
     "cluster-preconfig"  = ["echo -n"]
     "cluster-postconfig" = ["echo -n"]
     "boot-preconfig"     = ["echo -n"]
-    "preinstall"         = [
-      "sudo bash -x  /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' '${var.nfsmount}'"
-    ]
-    "postinstall"	 = ["echo -n"]
+    "preinstall"         = ["echo -n"]
+    "postinstall"	 = ["
+        "sudo bash -x  /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' '${var.nfsmount}'"
+    "]
   }
 }
