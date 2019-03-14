@@ -131,7 +131,6 @@ variable "boot" {
   default = {
     nodes         = "1"
     name          = "bootnode"
-   #vm_size       = "Standard_A2_v2"
     vm_size       = "Standard_D4_v3"
     os_disk_type  = "StandardSSD_LRS"
     os_disk_size  = "100"
@@ -140,18 +139,16 @@ variable "boot" {
     enable_accelerated_networking = "false"
   }
 }
+
 variable "master" {
   type = "map"
   default = {
     nodes         = "3"
     name          = "master"
-    #vm_size       = "Standard_A8_v2"
     vm_size       = "Standard_F8s_v2"
-    #vm_size       = "Standard_D16_v3"
-    #vm_size        = "Standard_D8_v3"
     os_disk_type  = "Premium_LRS"
-    os_disk_size  = "100"
-    docker_disk_size = "100"
+    os_disk_size  = "250"
+    docker_disk_size = "200"
     docker_disk_type = "Premium_LRS"
     etcd_data_size   = "10"
     etcd_data_type   = "Premium_LRS"
@@ -167,7 +164,6 @@ variable "proxy" {
   default = {
     nodes         = "1"
     name          = "proxy"
-    #vm_size       = "Standard_A2_v2"
     vm_size       = "Standard_D4_v3"
     os_disk_type  = "StandardSSD_LRS"
     docker_disk_size = "100"
@@ -188,29 +184,29 @@ variable "management" {
     enable_accelerated_networking = "false"
   }
 }
+
 variable "worker" {
   type = "map"
   default = {
     nodes         = "3"
     name          = "worker"
-    #vm_size       = "Standard_D16_v3"
-    #vm_size       = "Standard_D8_v3"
     vm_size        = "Standard_F16s_v2"
     os_disk_type  = "Premium_LRS"
-    os_disk_size  = "300"
-    docker_disk_size = "100"
+    os_disk_size  = "250"
+    docker_disk_size = "200"
     docker_disk_type = "Premium_LRS"
+    ibm_disk_size    = "300"
+    ibm_disk_type    = "Premium_LRS"
     data_disk_size  = "300"
     data_disk_type  = "Premium_LRS"
     enable_accelerated_networking = "false"
-
   }
 }
 
 variable "master_lb_ports" {
   description = "Ports on the master load balancer to listen to"
   type        = "list"
-  default     = ["8443", "8001", "8500", "8600", "4300", "9443", "31843", "22"]
+  default     = ["8443", "8001", "8500", "8600", "4300", "9443", "31843"]
 }
 
 variable "proxy_lb_ports" {

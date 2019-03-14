@@ -50,8 +50,8 @@ data "template_file" "etcd_disk" {
 #!/bin/bash
 sudo mkdir -p /var/lib/etcd
 sudo mkdir -p /var/lib/etcd-wal
-etcddisk=$(ls /dev/disk/azure/*/lun2)
-waldisk=$(ls /dev/disk/azure/*/lun3)
+etcddisk=$(ls /dev/disk/azure/*/lun3)
+waldisk=$(ls /dev/disk/azure/*/lun4)
 
 sudo parted -s -a optimal $etcddisk mklabel gpt -- mkpart primary xfs 1 -1
 sudo parted -s -a optimal $waldisk mklabel gpt -- mkpart primary xfs 1 -1
@@ -86,8 +86,8 @@ EOF
 data "template_file" "ibm_disk" {
   template = <<EOF
 #!/bin/bash
-sudo mkdir /ibm
-datadisk=$(ls /dev/disk/azure/*/lun4)
+sudo mkdir -p /ibm
+datadisk=$(ls /dev/disk/azure/*/lun2)
 
 sudo parted -s -a optimal $datadisk mklabel gpt -- mkpart primary xfs 1 -1
 sudo partprobe
@@ -109,9 +109,8 @@ EOF
 data "template_file" "data_disk" {
   template = <<EOF
 #!/bin/bash
-sudo mkdir /ibm
-sudo mkdir /data
-datadisk=$(ls /dev/disk/azure/*/lun2)
+sudo mkdir -p /data
+datadisk=$(ls /dev/disk/azure/*/lun3)
 
 sudo parted -s -a optimal $datadisk mklabel gpt -- mkpart primary xfs 1 -1
 sudo partprobe
@@ -276,6 +275,11 @@ data "template_cloudinit_config" "workerconfig" {
   part {
     content_type = "text/x-shellscript"
     content      = "${data.template_file.docker_disk.rendered}"
+  }
+  
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${data.template_file.ibm_disk.rendered}"
   }
 
   part {

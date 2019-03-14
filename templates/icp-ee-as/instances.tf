@@ -164,6 +164,16 @@ resource "azurerm_virtual_machine" "master" {
     lun               = 1
   }
 
+ # data disk
+  storage_data_disk {
+    name              = "${var.master["name"]}-ibmdisk-${count.index + 1}"
+    managed_disk_type = "${var.master["ibm_disk_type"]}"
+    disk_size_gb      = "${var.master["ibm_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 2
+  }
+
   # ETCD Data disk
   storage_data_disk {
     name              = "${var.master["name"]}-etcddata-${count.index + 1}"
@@ -171,7 +181,7 @@ resource "azurerm_virtual_machine" "master" {
     disk_size_gb      = "${var.master["etcd_data_size"]}"
     caching           = "ReadWrite"
     create_option     = "Empty"
-    lun               = 2
+    lun               = 3
   }
 
   # ETCD WAL disk
@@ -181,17 +191,7 @@ resource "azurerm_virtual_machine" "master" {
     disk_size_gb      = "${var.master["etcd_wal_size"]}"
     caching           = "ReadWrite"
     create_option     = "Empty"
-    lun               = 3
-  }
-
- # data disk
-  storage_data_disk {
-    name              = "${var.master["name"]}-ibm-${count.index + 1}"
-    managed_disk_type = "${var.master["ibm_disk_type"]}"
-    disk_size_gb      = "${var.master["ibm_disk_size"]}"
-    caching           = "ReadWrite"
-    create_option     = "Empty"
-    lun               = 4 
+    lun               = 4
   }
 
   os_profile {
@@ -200,6 +200,7 @@ resource "azurerm_virtual_machine" "master" {
     admin_password = "${var.admin_password}"
     custom_data    = "${data.template_cloudinit_config.masterconfig.rendered}"
   }
+
 
   os_profile_linux_config {
     disable_password_authentication = "${var.disable_password_authentication}"
@@ -372,12 +373,21 @@ resource "azurerm_virtual_machine" "worker" {
   }
 
   storage_data_disk {
+    name              = "${var.worker["name"]}-ibmdisk-${count.index + 1}"
+    managed_disk_type = "${var.worker["ibm_disk_type"]}"
+    disk_size_gb      = "${var.worker["ibm_disk_size"]}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 2
+  }
+
+  storage_data_disk {
     name              = "${var.worker["name"]}-datadisk-${count.index + 1}"
     managed_disk_type = "${var.worker["data_disk_type"]}"
     disk_size_gb      = "${var.worker["data_disk_size"]}"
     caching           = "ReadWrite"
     create_option     = "Empty"
-    lun               = 2
+    lun               = 3
   }
 
   os_profile {
