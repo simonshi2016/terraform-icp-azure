@@ -142,12 +142,12 @@ sudo ./install.sh
 mkdir -p /opt/ibm/cluster/images
 azcopy --source $${tarball} --source-key $${key} --destination /opt/ibm/cluster/images/$image_file
 
-# For now we need to install docker here
-wget https://raw.githubusercontent.com/ibm-cloud-architecture/terraform-module-icp-deploy/master/scripts/boot-master/install-docker.sh
+# For now we need to install docker here, line up with 3.0.2 plugin
+wget https://raw.githubusercontent.com/ibm-cloud-architecture/terraform-module-icp-deploy/3.0.2/scripts/boot-master/install-docker.sh
 chmod a+x install-docker.sh
 # Don't know why I need to do this first in azure
 sudo chmod 777 /tmp
-./install-docker.sh
+./install-docker.sh -i docker-ce -v latest
 
 # Now load the docker tarball
 tar xf /opt/ibm/cluster/images/$image_file -O | sudo docker load
@@ -160,7 +160,6 @@ EOF
 }
 
 data "template_file" "master_config" {
-
   template = <<EOF
 #cloud-config
 write_files:
@@ -175,6 +174,37 @@ EOF
   vars {
     username= "${azurerm_storage_account.infrastructure.name}"
     password= "${azurerm_storage_account.infrastructure.primary_access_key}"
+    tarball = "${var.image_location}"
+    key     = "${var.image_location_key}"
+  }
+}
+
+data "template_file" "master_load_tarball" {
+  count = "${var.master["nodes"]}"
+  template = <<EOF
+#!/bin/bash
+if [[ "$${master_idx}" == "0" ]];then
+cd /tmp
+wget -O azcopy.tar.gz https://aka.ms/downloadazcopylinux64
+tar -xf azcopy.tar.gz
+sudo ./install.sh
+
+echo "copying image..."
+image_file="$(basename $${tarball})"
+mkdir -p /opt/ibm/cluster/images
+azcopy --source $${tarball} --source-key $${key} --destination /opt/ibm/cluster/images/$image_file
+
+# For now we need to install docker here, line up with 3.0.2 plugin
+echo "Installing Docker.."
+wget https://raw.githubusercontent.com/ibm-cloud-architecture/terraform-module-icp-deploy/3.0.2/scripts/boot-master/install-docker.sh
+chmod a+x install-docker.sh
+sudo chmod 777 /tmp
+./install-docker.sh -i docker-ce -v latest
+fi
+EOF
+
+  vars {
+    master_idx = "${count.index}"
     tarball = "${var.image_location}"
     key     = "${var.image_location_key}"
   }
@@ -208,14 +238,14 @@ data "template_cloudinit_config" "bootconfig" {
   }
 
   # Load the ICP Images
-#  part {
-#    content_type = "text/x-shellscript"
-#    content      = "${var.image_location != "" ? data.template_file.load_tarball.rendered : "#!/bin/bash"}"
-#  }
-
+ # part {
+ #   content_type = "text/x-shellscript"
+ #   content      = "${var.image_location != "" ? data.template_file.load_tarball.rendered : "#!/bin/bash"}"
+ # }
 }
 
 data "template_cloudinit_config" "masterconfig" {
+  count         = "${var.master["nodes"]}"
   gzip          = true
   base64_encode = true
 
@@ -250,15 +280,14 @@ data "template_cloudinit_config" "masterconfig" {
 
   part {
     content_type = "text/x-shellscript"
+    content      = "${element(data.template_file.master_load_tarball.*.rendered,count.index)}"
+  }
+
+  part {
+    content_type = "text/x-shellscript"
     content      = "${data.template_file.master_script.rendered}"
   }
 
-  ### Don't load the tarball on masters for now
-  # Load the ICP Images
-  #part {
-  #  content_type = "text/x-shellscript"
-  #  content      = "${var.image_location != "" ? data.template_file.load_tarball.rendered : "#!/bin/bash"}"
-  #}
 }
 
 data "template_cloudinit_config" "workerconfig" {

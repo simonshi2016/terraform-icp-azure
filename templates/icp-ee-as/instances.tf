@@ -198,9 +198,8 @@ resource "azurerm_virtual_machine" "master" {
     computer_name  = "${var.master["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
     admin_password = "${var.admin_password}"
-    custom_data    = "${data.template_cloudinit_config.masterconfig.rendered}"
+    custom_data    = "${element(data.template_cloudinit_config.masterconfig.*.rendered,count.index)}"
   }
-
 
   os_profile_linux_config {
     disable_password_authentication = "${var.disable_password_authentication}"
@@ -211,6 +210,35 @@ resource "azurerm_virtual_machine" "master" {
   }
 }
 
+# connect to master1
+resource "null_resource" "master_load_package" {
+  depends_on=["azurerm_virtual_machine.boot","azurerm_virtual_machine.master"]
+  count = "${var.image_location != "" ? 1 : 0}"
+
+  connection {
+    host = "${azurerm_network_interface.master_nic.0.private_ip_address}"
+    user = "icpdeploy"
+    private_key = "${tls_private_key.installkey.private_key_pem}"
+    agent = "false"
+    bastion_host="${element(azurerm_public_ip.bootnode_pip.*.ip_address,0)}"
+  }
+
+  provisioner "file" {
+    source="./load_package.sh"
+    destination="/tmp/load_package.sh"
+  }
+
+  provisioner "file" {
+    source="./generate_wdp_conf.sh"
+    destination="/tmp/generate_wdp_conf.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo bash /tmp/load_package.sh '${var.image_location}'"
+    ]
+  }
+}
 
 ##################################
 ## Create Proxy VM

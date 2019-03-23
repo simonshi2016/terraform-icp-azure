@@ -4,8 +4,9 @@ cluster_domain=$1
 ssh_user=$2
 ssh_key=$3
 admin_user=$4
-nfs_mount=$5
-#server:/data
+icp4d_tarball=$5
+source_key=$6
+nfs_mount=$7
 
 function getIPs {
     for i in $(cat /opt/ibm/cluster/hosts); do
@@ -31,6 +32,22 @@ function getIPs {
         ((worker_count++))
     fi
     done
+}
+
+function downloadICP4DImage() {
+    echo "downloading ICP4D image"
+    azCopyBin=$(which azcopy)
+    if [[ $? -ne 0 ]];then
+        echo "not able to download icp4d, please download manually"
+        return
+    fi
+
+    if [[ "${icp4d_tarball}" != "" ]];then
+        if mount | grep /ibm > /dev/null 2>&1;then
+            icp4d_image=$(basename ${icp4d_tarball})
+            ${azCopyBin} --source ${icp4d_tarball} --source-key ${source_key} --destination /ibm/${icp4d_image}
+        fi
+    fi
 }
 
 getIPs
@@ -64,16 +81,21 @@ echo "ssh_port=22" >> /tmp/wdp.conf
 admin_pwd=$(grep default_admin_password /opt/ibm/cluster/config.yaml | awk -F: '{print $2}')
 echo "cloud=azure" >> /tmp/wdp.conf
 echo "cloud_data=${cluster_domain},${admin_pwd}" >> /tmp/wdp.conf
+
+masterbootnode="1"
+
 # xfer to master 1 node
 echo -e "${ssh_key}" > /tmp/tmp_key
 chmod 0600 /tmp/tmp_key
 scp -i /tmp/tmp_key -o StrictHostKeyChecking=no /tmp/wdp.conf ${ssh_user}@${master1_node}:~/
 ssh -i /tmp/tmp_key -o StrictHostKeyChecking=no ${ssh_user}@${master1_node} "sudo mkdir /ibm;sudo mv wdp.conf /ibm;sudo chown root:root /ibm/wdp.conf"
 
-tar -cvzf /tmp/icp-cluster.tar.gz /opt/ibm/cluster/cfc-certs /opt/ibm/cluster/config.yaml /opt/ibm/cluster/hosts
-scp -i /tmp/tmp_key -o StrictHostKeyChecking=no /tmp/icp-cluster.tar.gz ${ssh_user}@${master1_node}:/tmp
-ssh -i /tmp/tmp_key -o StrictHostKeyChecking=no ${ssh_user}@${master1_node} "sudo mkdir -p /opt/ibm/cluster; if [ ! -f /opt/ibm/cluster/config.yaml ];then sudo tar -xvzf /tmp/icp-cluster.tar.gz -C /;fi"
+if [[ "$masterbootnode" != "1" ]];then
+    tar -cvzf /tmp/icp-cluster.tar.gz /opt/ibm/cluster/cfc-certs /opt/ibm/cluster/config.yaml /opt/ibm/cluster/hosts
+    scp -i /tmp/tmp_key -o StrictHostKeyChecking=no /tmp/icp-cluster.tar.gz ${ssh_user}@${master1_node}:/tmp
+    ssh -i /tmp/tmp_key -o StrictHostKeyChecking=no ${ssh_user}@${master1_node} "sudo mkdir -p /opt/ibm/cluster; if [ ! -f /opt/ibm/cluster/config.yaml ];then sudo tar -xvzf /tmp/icp-cluster.tar.gz -C /;fi"
+fi
 
 rm -rf /tmp/tmp_key
 
-
+downloadICP4DImage

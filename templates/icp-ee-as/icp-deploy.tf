@@ -25,7 +25,8 @@ module "icpprovision" {
   bastion_host = "${azurerm_public_ip.bootnode_pip.ip_address}"
 
   # Provide IP addresses for boot, master, mgmt, va, proxy and workers
-  boot-node = "${element(concat(azurerm_network_interface.boot_nic.*.private_ip_address, list("")), 0)}"
+  #boot-node = "${element(concat(azurerm_network_interface.boot_nic.*.private_ip_address, list("")), 0)}"
+  boot-node = "${azurerm_network_interface.master_nic.0.private_ip_address}"
 
   icp-host-groups = {
     master      = ["${azurerm_network_interface.master_nic.*.private_ip_address}"]
@@ -129,7 +130,9 @@ module "icpprovision" {
 
   generate_key = true
 
-  image_location   = "${var.image_location}"
+  # delegate the image load to module
+  image_location   = "${var.http_image_location}"
+
   ssh_user         = "${local.ssh_user}"
   ssh_key_base64   = "${base64encode(local.ssh_key)}"
   ssh_agent	   = "false"
@@ -137,10 +140,10 @@ module "icpprovision" {
   hooks = {
     "cluster-preconfig"  = ["echo -n"]
     "cluster-postconfig" = ["echo -n"]
-    "boot-preconfig"     = ["echo -n"]
+    "boot-preconfig"     = ["while [ ! -f /opt/ibm/cluster/images/.load_package_finished ];do sleep 5; done"]
     "preinstall"         = ["echo -n"]
-    "postinstall"	 = ["
-        "sudo bash -x  /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' '${var.nfsmount}'"
-    "]
+    "postinstall"	 = [
+        "sudo bash -x  /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' ${var.image_location_icp4d} '${var.image_location_key}' '${var.nfsmount}'"
+    ]
   }
 }

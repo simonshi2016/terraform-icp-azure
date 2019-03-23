@@ -62,7 +62,7 @@ variable "storage_replication_type" {
 }
 variable "ssh_public_key" {
     description = "SSH Public Key"
-    default = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC2wyk9lQ0LpsWo/ZXBqesnU31Ng6EzcK97Mhkjk/GyavHQQR3hxfrvnvJ8fDbdHRfwLx0epm1VXAs8JSCvKbEYtWqL3py4pIJDo1x5vcuOgUtTfpNl+FbggecDUfpUvBXsnDClZc5EnnW6wKHIo9jE/7XtP0CVSPvVg9UfVOLMrE6LGmAUAXb0KC6fEUMutuQtdctXFNP2G9t0MoBAyosiDvY/BjPKj5CYvnjb6kUslr3fuwbcnxi3K8wj0NvwxC/OYOEgkkjlNsu7wvd4mi8UoXDb+L8ADifVHCU0DSO43jMc4XJaxAZjqSPXqxeVPfQTFH2JFnodJl0kAMSNdMBP"
+    default = ""
 }
 variable "nfsmount" {
     default = ""
@@ -262,3 +262,12 @@ variable "disabled_management_services" {
   default     = ["istio", "vulnerability-advisor", "storage-glusterfs", "storage-minio"]
 }
 
+variable "image_location_icp4d" {
+  description = "Location of ICP4D image tarball. Assumes stored as azure blob"
+  default   = ""
+}
+
+variable "http_image_location" {
+  description = "Url of ICP image tarball. "
+  default     = ""
+}
