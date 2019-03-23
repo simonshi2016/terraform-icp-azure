@@ -58,7 +58,7 @@ function downloadICP4DImage() {
         if mount | grep /ibm > /dev/null 2>&1;then
             icp4d_image=$(basename ${icp4d_tarball})
             echo "downloading ICP4D image"
-            ${azCopyBin} --source ${icp4d_tarball} --source-key ${source_key} --destination /ibm/${icp4d_image}
+            ${azCopyBin} --source ${icp4d_tarball} --source-key ${source_key} --destination /ibm/${icp4d_image} > /dev/null
         fi
     fi
 }
