@@ -167,6 +167,10 @@ write_files:
   content: |
     username=$${username}
     password=$${password}
+- path: /tmp/generate_wdp_conf.sh
+  permissions: '0755'
+  encoding: b64
+  content: ${base64encode(file("${path.module}/generate_wdp_conf.sh"))}
 mounts:
 - [ ${element(split(":", azurerm_storage_share.icpregistry.url), 1)}, /var/lib/registry, cifs, "nofail,credentials=/etc/smbcredentials/icpregistry.cred,dir_mode=0777,file_mode=0777,serverino" ]
 EOF
@@ -183,7 +187,7 @@ data "template_file" "master_load_tarball" {
   count = "${var.master["nodes"]}"
   template = <<EOF
 #!/bin/bash
-if [[ "$${master_idx}" == "0" ]];then
+if [[ "$${master_idx}" == "0" ]] && [[ "$$tarball" != "" ]];then
 cd /tmp
 wget -O azcopy.tar.gz https://aka.ms/downloadazcopylinux64
 tar -xf azcopy.tar.gz

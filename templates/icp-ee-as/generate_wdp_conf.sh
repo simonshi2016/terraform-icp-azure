@@ -34,17 +34,30 @@ function getIPs {
     done
 }
 
-function downloadICP4DImage() {
-    echo "downloading ICP4D image"
+function installAzCopy() {
+    echo "check if azcopy is installed"
     azCopyBin=$(which azcopy)
     if [[ $? -ne 0 ]];then
-        echo "not able to download icp4d, please download manually"
+        cd /tmp
+        wget -O azcopy.tar.gz https://aka.ms/downloadazcopylinux64
+        tar -xf azcopy.tar.gz
+        sudo ./install.sh
+    fi
+}
+
+function downloadICP4DImage() {
+    installAzCopy
+
+    azCopyBin=$(which azcopy)
+    if [[ $? -ne 0 ]];then
+        echo "not able to download ICP4D image, please download manually"
         return
     fi
 
     if [[ "${icp4d_tarball}" != "" ]];then
         if mount | grep /ibm > /dev/null 2>&1;then
             icp4d_image=$(basename ${icp4d_tarball})
+            echo "downloading ICP4D image"
             ${azCopyBin} --source ${icp4d_tarball} --source-key ${source_key} --destination /ibm/${icp4d_image}
         fi
     fi

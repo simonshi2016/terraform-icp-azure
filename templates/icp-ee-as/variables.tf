@@ -271,3 +271,13 @@ variable "http_image_location" {
   description = "Url of ICP image tarball. "
   default     = ""
 }
+
+variable "http_image_location_user" {
+  description = "Http Username of ICP image tarball. "
+  default   = ""
+}
+
+variable "http_image_location_pass" {
+  description = "Http Password of ICP image tarball. "
+  default   = ""
+}

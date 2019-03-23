@@ -132,6 +132,8 @@ module "icpprovision" {
 
   # delegate the image load to module
   image_location   = "${var.http_image_location}"
+  image_location_user = "${var.http_image_location_user}"
+  image_location_pass = "${var.http_image_location_pass}"
 
   ssh_user         = "${local.ssh_user}"
   ssh_key_base64   = "${base64encode(local.ssh_key)}"
@@ -140,7 +142,9 @@ module "icpprovision" {
   hooks = {
     "cluster-preconfig"  = ["echo -n"]
     "cluster-postconfig" = ["echo -n"]
-    "boot-preconfig"     = ["while [ ! -f /opt/ibm/cluster/images/.load_package_finished ];do sleep 5; done"]
+    "boot-preconfig"     = [
+      "${var.image_location == "" ? "echo skipped" : "while [ ! -f /opt/ibm/cluster/images/.load_package_finished ];do sleep 5; done"}"
+    ]
     "preinstall"         = ["echo -n"]
     "postinstall"	 = [
         "sudo bash -x  /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' ${var.image_location_icp4d} '${var.image_location_key}' '${var.nfsmount}'"

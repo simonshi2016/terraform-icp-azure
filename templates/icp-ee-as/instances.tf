@@ -228,14 +228,9 @@ resource "null_resource" "master_load_package" {
     destination="/tmp/load_package.sh"
   }
 
-  provisioner "file" {
-    source="./generate_wdp_conf.sh"
-    destination="/tmp/generate_wdp_conf.sh"
-  }
-
   provisioner "remote-exec" {
     inline = [
-      "sudo bash /tmp/load_package.sh '${var.image_location}'"
+      "${sudo bash /tmp/load_package.sh '${var.image_location}'"
     ]
   }
 }
