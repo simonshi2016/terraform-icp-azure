@@ -98,7 +98,7 @@ variable "admin_username" {
 }
 variable "admin_password" {
   description = "linux vm administrator password"
-  default     = "Good4now!"
+  default     = ""
 }
 
 ##### ICP Configurations ######
@@ -112,7 +112,7 @@ variable "cluster_ip_range" {
 }
 variable "icpadmin_password" {
     description = "ICP admin password"
-    default = "Passw0rd-Passw0rd-Passw0rd-Passw0rd"
+    default = ""
 }
 variable "icp_inception_image" {
     description = "ICP Inception image to use"
