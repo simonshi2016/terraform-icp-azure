@@ -111,4 +111,4 @@ fi
 
 rm -rf /tmp/tmp_key
 
-downloadICP4DImage
+#downloadICP4DImage
