@@ -230,7 +230,7 @@ resource "null_resource" "master_load_package" {
 
   provisioner "remote-exec" {
     inline = [
-      "${sudo bash /tmp/load_package.sh '${var.image_location}'"
+      "sudo bash /tmp/load_package.sh ${var.image_location}"
     ]
   }
 }
