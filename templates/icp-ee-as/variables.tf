@@ -162,9 +162,9 @@ variable "master" {
 variable "proxy" {
   type = "map"
   default = {
-    nodes         = "1"
+    nodes         = "2"
     name          = "proxy"
-    vm_size       = "Standard_D4_v3"
+    vm_size       = "Standard_D8_v3"
     os_disk_type  = "StandardSSD_LRS"
     docker_disk_size = "100"
     docker_disk_type = "StandardSSD_LRS"
