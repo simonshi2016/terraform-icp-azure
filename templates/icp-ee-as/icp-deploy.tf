@@ -147,7 +147,7 @@ module "icpprovision" {
     ]
     "preinstall"         = ["echo -n"]
     "postinstall"	 = [
-        "sudo bash -x  /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' ${var.image_location_icp4d} '${var.image_location_key}' '${var.nfsmount}'"
+        "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' ${var.image_location_icp4d} '${var.image_location_key}' '${var.nfsmount}'"
     ]
   }
 }

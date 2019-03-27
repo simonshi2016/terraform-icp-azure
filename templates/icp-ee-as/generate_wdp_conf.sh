@@ -101,7 +101,7 @@ masterbootnode="1"
 echo -e "${ssh_key}" > /tmp/tmp_key
 chmod 0600 /tmp/tmp_key
 scp -i /tmp/tmp_key -o StrictHostKeyChecking=no /tmp/wdp.conf ${ssh_user}@${master1_node}:~/
-ssh -i /tmp/tmp_key -o StrictHostKeyChecking=no ${ssh_user}@${master1_node} "sudo mkdir /ibm;sudo mv wdp.conf /ibm;sudo chown root:root /ibm/wdp.conf"
+ssh -i /tmp/tmp_key -o StrictHostKeyChecking=no ${ssh_user}@${master1_node} "sudo mv wdp.conf /ibm;sudo chown root:root /ibm/wdp.conf"
 
 if [[ "$masterbootnode" != "1" ]];then
     tar -cvzf /tmp/icp-cluster.tar.gz /opt/ibm/cluster/cfc-certs /opt/ibm/cluster/config.yaml /opt/ibm/cluster/hosts
@@ -111,4 +111,5 @@ fi
 
 rm -rf /tmp/tmp_key
 
+installAzCopy
 #downloadICP4DImage

@@ -106,20 +106,6 @@ resource "azurerm_virtual_machine" "boot" {
   }
 }
 
-resource "null_resource" "boot_copy_files" {
-  depends_on = ["azurerm_virtual_machine.boot"]
-  connection {
-    host = "${azurerm_public_ip.bootnode_pip.ip_address}"
-    user = "${var.admin_username}"
-    password = "${var.admin_password}"
-  }
-
-  provisioner "file" {
-    source = "./generate_wdp_conf.sh"
-    destination = "/tmp/generate_wdp_conf.sh"
-  }
-}
-
 ##################################
 ## Create Master VM
 ##################################
