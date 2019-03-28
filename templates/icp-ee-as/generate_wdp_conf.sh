@@ -79,7 +79,7 @@ done
 
 for((i=0;i<${#workers[@]};i++));do
     echo "worker_node_$((i+1))=${workers[i]}" >> /tmp/wdp.conf
-    if [[ "$nfs_mount" == "" ]];then
+    if [[ "$nfs_mount" == "" ]] && [[ $i -lt 3 ]];then
         echo "worker_node_data_$((i+1))=/data" >> /tmp/wdp.conf
     fi
     echo "worker_node_path_$((i+1))=/ibm" >> /tmp/wdp.conf
