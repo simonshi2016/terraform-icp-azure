@@ -83,6 +83,10 @@ fi
 
 rm -rf /tmp/tmp_key
 
+if [[ "$icp4d_tarball" == "" ]];then
+    echo "icp4d is ready to be installed"
+fi
+
 echo "downloading icp4d installer"
 filename=$(basename $icp4d_tarball)
 wget -nv --continue ${icp4d_tarball} -O /ibm/$filename

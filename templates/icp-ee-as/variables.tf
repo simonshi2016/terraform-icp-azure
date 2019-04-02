@@ -108,7 +108,7 @@ variable "cluster_ip_range" {
 }
 variable "icpadmin_password" {
     description = "ICP admin password"
-    default = ""
+    default = "Passw0rdPassw0rdPassw0rdPassw0rd"
 }
 variable "icp_inception_image" {
     description = "ICP Inception image to use"

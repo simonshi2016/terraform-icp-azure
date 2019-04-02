@@ -131,8 +131,9 @@ module "icpprovision" {
   generate_key = true
 
   # delegate the image load to module
-  image_location   = "${substr(var.image_location,0,5) == "https" ? var.image_location : 
-                      var.image_location == "default" ? "" : "${element(concat(azurerm_storage_blob.icpimage.*.url, list("")),0)}"}"
+  image_location   = "${var.image_location != "default" && substr(var.image_location,0,5) == "https" ? var.image_location : 
+                        var.image_location == "default" ? "" : "${element(concat(azurerm_storage_blob.icpimage.*.url, list("")),0)}"}"
+
   image_location_user = "${var.image_location_user}"
   image_location_pass = "${var.image_location_pass}"
 
@@ -144,10 +145,7 @@ module "icpprovision" {
     "cluster-preconfig"  = ["echo -n"]
     "cluster-postconfig" = ["echo -n"]
     "boot-preconfig"     = ["echo -n"]
-    "preinstall"         = ["echo icp: ${azurerm_storage_blob.icp4dimage.url}"]
+    "preinstall"         = ["echo -n"]
     "postinstall"        = ["echo -n"]
-#    "postinstall"	 = [move it to master_icp4d_install
-#        "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' ${var.image_location_icp4d} '${var.image_location_key}' '${var.nfsmount}'"
-#    ]
   }
 }

@@ -196,7 +196,8 @@ resource "azurerm_virtual_machine" "master" {
 }
 
 locals {
-  image_location_icp4d="${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) == "https" ? "var.image_location_icp4d" : var.image_location_icp4d != "default" ? "${azurerm_storage_blob.icp4dimage.url}" : ""}"
+  image_location_icp4d="${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) == "https" ? "var.image_location_icp4d" : 
+                          var.image_location_icp4d != "default" ? "${element(concat(azurerm_storage_blob.icp4dimage.*.url,list("")),0)}" : ""}"
 }
 
 resource "null_resource" "master_icp4d_install" {
