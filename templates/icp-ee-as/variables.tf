@@ -150,7 +150,7 @@ variable "master" {
     etcd_data_type   = "Premium_LRS"
     etcd_wal_size    = "10"
     etcd_wal_type    = "Premium_LRS"
-    ibm_disk_size    = "300"
+    ibm_disk_size    = "500"
     ibm_disk_type    = "Premium_LRS"   
     enable_accelerated_networking = "true"
   }
