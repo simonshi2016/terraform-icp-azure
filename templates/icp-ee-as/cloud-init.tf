@@ -7,6 +7,7 @@ data "template_file" "common_config" {
     - cifs-utils
     - nfs-common
     - python-yaml
+  disable_root: false
   users:
     - default
     - name: icpdeploy 
@@ -14,6 +15,9 @@ data "template_file" "common_config" {
       sudo: [ "ALL=(ALL) NOPASSWD:ALL" ]
       shell: /bin/bash
       ssh-authorized-keys:
+        - ${tls_private_key.installkey.public_key_openssh}
+    - name: root
+      ssh_authorized_keys:
         - ${tls_private_key.installkey.public_key_openssh}
 EOF
 }
@@ -187,7 +191,7 @@ data "template_file" "master_load_tarball" {
   count = "${var.master["nodes"]}"
   template = <<EOF
 #!/bin/bash
-if [[ "$${master_idx}" == "0" ]] && [[ "$$tarball" != "" ]];then
+if [[ "$${master_idx}" == "0" ]] && [[ "$$tarball" != "" ]] && [[ "$$key" != "" ]];then
 cd /tmp
 wget -O azcopy.tar.gz https://aka.ms/downloadazcopylinux64
 tar -xf azcopy.tar.gz
@@ -205,11 +209,14 @@ chmod a+x install-docker.sh
 sudo chmod 777 /tmp
 ./install-docker.sh -i docker-ce -v latest
 fi
+
+tar -xzf $image_file -O | docker load >&2
+touch .load_package_finished
 EOF
 
   vars {
     master_idx = "${count.index}"
-    tarball = "${var.image_location}"
+    tarball = "${substr(var.image_location,0,5) == "https" ? var.image_location : ""}"
     key     = "${var.image_location_key}"
   }
 }
@@ -282,10 +289,10 @@ data "template_cloudinit_config" "masterconfig" {
     content      =  "${data.template_file.master_config.rendered}"
   }
 
-  part {
-    content_type = "text/x-shellscript"
-    content      = "${element(data.template_file.master_load_tarball.*.rendered,count.index)}"
-  }
+ # part {
+ #   content_type = "text/x-shellscript"
+ #   content      = "${element(data.template_file.master_load_tarball.*.rendered,count.index)}"
+ # }
 
   part {
     content_type = "text/x-shellscript"

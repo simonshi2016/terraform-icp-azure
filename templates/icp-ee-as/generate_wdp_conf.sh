@@ -3,10 +3,8 @@ lb=$1
 cluster_domain=$1
 ssh_user=$2
 ssh_key=$3
-admin_user=$4
-icp4d_tarball=$5
-source_key=$6
-nfs_mount=$7
+icp4d_tarball=$4
+nfs_mount=$5
 
 function getIPs {
     for i in $(cat /opt/ibm/cluster/hosts); do
@@ -34,39 +32,11 @@ function getIPs {
     done
 }
 
-function installAzCopy() {
-    echo "check if azcopy is installed"
-    azCopyBin=$(which azcopy)
-    if [[ $? -ne 0 ]];then
-        cd /tmp
-        wget -O azcopy.tar.gz https://aka.ms/downloadazcopylinux64
-        tar -xf azcopy.tar.gz
-        sudo ./install.sh
-    fi
-}
-
-function downloadICP4DImage() {
-    installAzCopy
-
-    azCopyBin=$(which azcopy)
-    if [[ $? -ne 0 ]];then
-        echo "not able to download ICP4D image, please download manually"
-        return
-    fi
-
-    if [[ "${icp4d_tarball}" != "" ]];then
-        if mount | grep /ibm > /dev/null 2>&1;then
-            icp4d_image=$(basename ${icp4d_tarball})
-            echo "downloading ICP4D image"
-            ${azCopyBin} --source ${icp4d_tarball} --source-key ${source_key} --destination /ibm/${icp4d_image} > /dev/null
-        fi
-    fi
-}
-
 getIPs
 
-#echo "ssh_key=/opt/ibm/cluster/ssh_key" > /tmp/wdp.conf
-echo "user=${admin_user}" > /tmp/wdp.conf
+echo -e "${ssh_key}" > /root/.ssh/installkey
+chmod 600 /root/.ssh/installkey
+echo "ssh_key=/root/.ssh/installkey" > /tmp/wdp.conf
 echo "virtual_ip_address_1=${lb}" >> /tmp/wdp.conf
 echo "virtual_ip_address_2=${lb}" >> /tmp/wdp.conf
 
@@ -90,6 +60,8 @@ if [[ "$nfs_mount" != "" ]];then
 fi
 
 echo "ssh_port=22" >> /tmp/wdp.conf
+echo "suppress_warning=true" >> /tmp/wdp.conf
+
 # add cloud additional data
 admin_pwd=$(grep default_admin_password /opt/ibm/cluster/config.yaml | awk -F: '{print $2}')
 echo "cloud=azure" >> /tmp/wdp.conf
@@ -111,5 +83,13 @@ fi
 
 rm -rf /tmp/tmp_key
 
-installAzCopy
-#downloadICP4DImage
+echo "downloading icp4d installer"
+filename=$(basename $icp4d_tarball)
+wget -nv --continue ${icp4d_tarball} -O /ibm/$filename
+chmod a+x /ibm/$filename
+echo "installing icp4d..."
+cd /ibm
+./$filename --load-balancer --accept-license
+if [[ $? -ne 0 ]];then
+    echo "error installing icp4d,please check log under /ibm/InstallPacakge/tmp for details"
+fi

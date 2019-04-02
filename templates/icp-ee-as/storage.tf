@@ -32,3 +32,42 @@ resource "azurerm_storage_share" "icpregistry" {
   storage_account_name = "${azurerm_storage_account.infrastructure.name}"
   quota = 300
 }
+
+# blob storage account for uploading images
+resource "azurerm_storage_account" "blobstorage" {
+  name                     = "icp4d${random_id.clusterid.hex}"
+  resource_group_name      = "${azurerm_resource_group.icp.name}"
+  location                 = "${var.location}"
+  account_tier             = "${var.storage_account_tier}"
+  account_replication_type = "${var.storage_replication_type}"
+  account_kind             = "BlobStorage"
+}
+
+resource "azurerm_storage_container" "images" {
+  name                  = "icpimages"
+  resource_group_name   = "${azurerm_resource_group.icp.name}"
+  storage_account_name  = "${azurerm_storage_account.blobstorage.name}"
+  container_access_type = "blob"
+}
+
+# create the resource only if not yet pre-uploaded
+resource "azurerm_storage_blob" "icpimage" {
+  count = "${var.image_location != "default" && substr(var.image_location,0,5) != "https" ? 1 : 0}"
+  name = "${basename(var.image_location)}"
+  source = "${var.image_location}"
+  type="block"
+  resource_group_name    = "${azurerm_resource_group.icp.name}"
+  storage_account_name   = "${azurerm_storage_account.blobstorage.name}"
+  storage_container_name = "${azurerm_storage_container.images.name}"
+}
+
+# create the resource only if not yet pre-uploaded
+resource "azurerm_storage_blob" "icp4dimage" {
+  count = "${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) != "https" ? 1 : 0}"
+  name = "${basename(var.image_location_icp4d)}"
+  source = "${var.image_location_icp4d}"
+  type="block"
+  resource_group_name    = "${azurerm_resource_group.icp.name}"
+  storage_account_name   = "${azurerm_storage_account.blobstorage.name}"
+  storage_container_name = "${azurerm_storage_container.images.name}"
+}

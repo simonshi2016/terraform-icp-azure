@@ -69,7 +69,7 @@ variable "nfsmount" {
 }
 variable "disable_password_authentication" {
   description = "Whether to enable or disable ssh password authentication for the created Azure VMs. Default: true"
-  default     = "false"
+  default     = "true"
 
 }
 variable "os_image" {
@@ -95,10 +95,6 @@ variable "os_image_map" {
 variable "admin_username" {
   description = "linux vm administrator user name"
   default     = "vmadmin"
-}
-variable "admin_password" {
-  description = "linux vm administrator password"
-  default     = ""
 }
 
 ##### ICP Configurations ######
@@ -245,8 +241,8 @@ variable "registry_password" {
 }
 
 variable "image_location" {
-  description = "Location of ICP image tarball. Assumes stored as azure blob"
-  default     = ""
+  description = "Location of ICP image tarball. Assumes stored as azure blob, default value for registry install, to walkaround terraform issue"
+  default     = "default"
 }
 
 variable "image_location_key" {
@@ -263,21 +259,16 @@ variable "disabled_management_services" {
 }
 
 variable "image_location_icp4d" {
-  description = "Location of ICP4D image tarball. Assumes stored as azure blob"
-  default   = ""
+  description = "Location of ICP4D image tarball. Assumes stored as azure blob, default value for manuall install, equvilent to not provided, walkaround for terraform issue"
+  default   = "default"
 }
 
-variable "http_image_location" {
-  description = "Url of ICP image tarball. "
-  default     = ""
-}
-
-variable "http_image_location_user" {
+variable "image_location_user" {
   description = "Http Username of ICP image tarball. "
   default   = ""
 }
 
-variable "http_image_location_pass" {
+variable "image_location_pass" {
   description = "Http Password of ICP image tarball. "
   default   = ""
 }

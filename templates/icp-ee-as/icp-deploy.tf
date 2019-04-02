@@ -20,7 +20,7 @@ locals {
 }
 
 module "icpprovision" {
-  source = "github.com/ibm-cloud-architecture/terraform-module-icp-deploy?ref=3.0.2"
+  source = "../../../terraform-module-icp-deploy"
 
   bastion_host = "${azurerm_public_ip.bootnode_pip.ip_address}"
 
@@ -131,9 +131,10 @@ module "icpprovision" {
   generate_key = true
 
   # delegate the image load to module
-  image_location   = "${var.http_image_location}"
-  image_location_user = "${var.http_image_location_user}"
-  image_location_pass = "${var.http_image_location_pass}"
+  image_location   = "${substr(var.image_location,0,5) == "https" ? var.image_location : 
+                      var.image_location == "default" ? "" : "${element(concat(azurerm_storage_blob.icpimage.*.url, list("")),0)}"}"
+  image_location_user = "${var.image_location_user}"
+  image_location_pass = "${var.image_location_pass}"
 
   ssh_user         = "${local.ssh_user}"
   ssh_key_base64   = "${base64encode(local.ssh_key)}"
@@ -142,12 +143,11 @@ module "icpprovision" {
   hooks = {
     "cluster-preconfig"  = ["echo -n"]
     "cluster-postconfig" = ["echo -n"]
-    "boot-preconfig"     = [
-      "${var.image_location == "" ? "echo skipped" : "while [ ! -f /opt/ibm/cluster/images/.load_package_finished ];do sleep 5; done"}"
-    ]
-    "preinstall"         = ["echo -n"]
-    "postinstall"	 = [
-        "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' ${var.image_location_icp4d} '${var.image_location_key}' '${var.nfsmount}'"
-    ]
+    "boot-preconfig"     = ["echo -n"]
+    "preinstall"         = ["echo icp: ${azurerm_storage_blob.icp4dimage.url}"]
+    "postinstall"        = ["echo -n"]
+#    "postinstall"	 = [move it to master_icp4d_install
+#        "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.admin_username}' ${var.image_location_icp4d} '${var.image_location_key}' '${var.nfsmount}'"
+#    ]
   }
 }

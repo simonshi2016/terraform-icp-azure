@@ -93,7 +93,6 @@ resource "azurerm_virtual_machine" "boot" {
   os_profile {
     computer_name  = "${var.boot["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    admin_password = "${var.admin_password}"
     custom_data    = "${data.template_cloudinit_config.bootconfig.rendered}"
   }
 
@@ -110,6 +109,7 @@ resource "azurerm_virtual_machine" "boot" {
 ## Create Master VM
 ##################################
 resource "azurerm_virtual_machine" "master" {
+  depends_on            = ["azurerm_storage_blob.icpimage"]
   count                 = "${var.master["nodes"]}"
   name                  = "${var.master["name"]}${count.index + 1}"
   location              = "${var.location}"
@@ -183,7 +183,6 @@ resource "azurerm_virtual_machine" "master" {
   os_profile {
     computer_name  = "${var.master["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    admin_password = "${var.admin_password}"
     custom_data    = "${element(data.template_cloudinit_config.masterconfig.*.rendered,count.index)}"
   }
 
@@ -196,10 +195,12 @@ resource "azurerm_virtual_machine" "master" {
   }
 }
 
-# connect to master1
-resource "null_resource" "master_load_package" {
-  depends_on=["azurerm_virtual_machine.boot","azurerm_virtual_machine.master"]
-  count = "${var.image_location != "" ? 1 : 0}"
+locals {
+  image_location_icp4d="${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) == "https" ? "var.image_location_icp4d" : var.image_location_icp4d != "default" ? "${azurerm_storage_blob.icp4dimage.url}" : ""}"
+}
+
+resource "null_resource" "master_icp4d_install" {
+  depends_on=["azurerm_virtual_machine.boot","azurerm_virtual_machine.master","azurerm_storage_blob.icp4dimage"]
 
   connection {
     host = "${azurerm_network_interface.master_nic.0.private_ip_address}"
@@ -209,14 +210,11 @@ resource "null_resource" "master_load_package" {
     bastion_host="${element(azurerm_public_ip.bootnode_pip.*.ip_address,0)}"
   }
 
-  provisioner "file" {
-    source="./load_package.sh"
-    destination="/tmp/load_package.sh"
-  }
-
+  # "echo" for creating dependency on module output, v0.12 has explicit depends_on=["module.icpprovision.install_complete"]
   provisioner "remote-exec" {
     inline = [
-      "sudo bash /tmp/load_package.sh ${var.image_location}"
+      "echo ${module.icpprovision.install_complete}",
+      "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${local.image_location_icp4d}' '${var.nfsmount}'"
     ]
   }
 }
@@ -266,7 +264,6 @@ resource "azurerm_virtual_machine" "proxy" {
   os_profile {
     computer_name  = "${var.proxy["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    admin_password = "${var.admin_password}"
     custom_data    = "${data.template_cloudinit_config.workerconfig.rendered}"
   }
 
@@ -324,7 +321,6 @@ resource "azurerm_virtual_machine" "management" {
   os_profile {
     computer_name  = "${var.management["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    admin_password = "${var.admin_password}"
     custom_data    = "${data.template_cloudinit_config.workerconfig.rendered}"
   }
 
@@ -342,6 +338,7 @@ resource "azurerm_virtual_machine" "management" {
 ## Create Worker VM
 ##################################
 resource "azurerm_virtual_machine" "worker" {
+  depends_on            = ["azurerm_storage_blob.icpimage"]
   count                 = "${var.worker["nodes"]}"
   name                  = "${var.worker["name"]}${count.index + 1}"
   location              = "${var.location}"
@@ -402,7 +399,6 @@ resource "azurerm_virtual_machine" "worker" {
   os_profile {
     computer_name  = "${var.worker["name"]}${count.index + 1}"
     admin_username = "${var.admin_username}"
-    admin_password = "${var.admin_password}"
     custom_data    = "${data.template_cloudinit_config.workerconfig.rendered}"
   }
 
