@@ -17,6 +17,9 @@ locals {
   inception_image = "${local.cred_reg != "" ? join("/", list("${local.cred_reg}"), list("${var.icp_inception_image}")) : var.icp_inception_image}"
   ssh_user = "icpdeploy"
   ssh_key = "${tls_private_key.installkey.private_key_pem}"
+  image_location   = "${var.image_location != "default" && substr(var.image_location,0,5) == "https" && var.image_location_key == "" ? var.image_location : 
+                        var.image_location != "default" && var.image_location_key == "" ? "${element(concat(azurerm_storage_blob.icpimage.*.url, list("")),0)}" : ""}"
+  info = "${var.image_location_key != "" ? "${element(concat(null_resource.master_load_pkg.*.id, list("")),0)}" : ""}"
 }
 
 module "icpprovision" {
@@ -131,21 +134,19 @@ module "icpprovision" {
   generate_key = true
 
   # delegate the image load to module
-  image_location   = "${var.image_location != "default" && substr(var.image_location,0,5) == "https" ? var.image_location : 
-                        var.image_location == "default" ? "" : "${element(concat(azurerm_storage_blob.icpimage.*.url, list("")),0)}"}"
-
+  image_location      = "${local.image_location}"
   image_location_user = "${var.image_location_user}"
   image_location_pass = "${var.image_location_pass}"
 
   ssh_user         = "${local.ssh_user}"
   ssh_key_base64   = "${base64encode(local.ssh_key)}"
-  ssh_agent	   = "false"
+  ssh_agent	       = "false"
 
   hooks = {
     "cluster-preconfig"  = ["echo -n"]
     "cluster-postconfig" = ["echo -n"]
     "boot-preconfig"     = ["echo -n"]
-    "preinstall"         = ["echo -n"]
+    "preinstall"         = ["echo ${local.info}"]
     "postinstall"        = ["echo -n"]
   }
 }

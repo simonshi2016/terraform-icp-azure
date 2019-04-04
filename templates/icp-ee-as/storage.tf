@@ -52,7 +52,7 @@ resource "azurerm_storage_container" "images" {
 
 # create the resource only if not yet pre-uploaded
 resource "azurerm_storage_blob" "icpimage" {
-  count = "${var.image_location != "default" && substr(var.image_location,0,5) != "https" ? 1 : 0}"
+  count = "${var.image_location != "default" && substr(var.image_location,0,5) != "https" && var.image_location_key == "" ? 1 : 0}"
   name = "${basename(var.image_location)}"
   source = "${var.image_location}"
   type="block"
@@ -63,7 +63,7 @@ resource "azurerm_storage_blob" "icpimage" {
 
 # create the resource only if not yet pre-uploaded
 resource "azurerm_storage_blob" "icp4dimage" {
-  count = "${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) != "https" ? 1 : 0}"
+  count = "${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) != "https" && var.image_location_key == "" ? 1 : 0}"
   name = "${basename(var.image_location_icp4d)}"
   source = "${var.image_location_icp4d}"
   type="block"

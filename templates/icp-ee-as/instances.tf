@@ -215,7 +215,26 @@ resource "null_resource" "master_icp4d_install" {
   provisioner "remote-exec" {
     inline = [
       "echo ${module.icpprovision.install_complete}",
-      "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${local.image_location_icp4d}' '${var.nfsmount}'"
+      "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${local.image_location_icp4d}' '${var.image_location_key}' '${var.nfsmount}'"
+    ]
+  }
+}
+
+resource "null_resource" "master_load_pkg" {
+  depends_on=["azurerm_virtual_machine.master"]
+  count="${var.image_location_key == "" ? 0 : 1}"
+
+  connection {
+    host = "${azurerm_network_interface.master_nic.0.private_ip_address}"
+    user = "icpdeploy"
+    private_key = "${tls_private_key.installkey.private_key_pem}"
+    agent = "false"
+    bastion_host="${element(azurerm_public_ip.bootnode_pip.*.ip_address,0)}"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo bash /tmp/load_package.sh ${var.image_location} ${var.image_location_key}"
     ]
   }
 }

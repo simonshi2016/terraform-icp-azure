@@ -3,7 +3,8 @@ lb=$1
 cluster_domain=$1
 ssh_user=$2
 ssh_key=$3
-icp4d_tarball=$4
+image_location_icp4d=$4
+image_location_key=$5
 nfs_mount=$5
 
 function getIPs {
@@ -83,17 +84,33 @@ fi
 
 rm -rf /tmp/tmp_key
 
-if [[ "$icp4d_tarball" == "" ]];then
+if [[ "$image_location_icp4d" == "" ]];then
     echo "icp4d is ready to be installed"
 fi
 
 echo "downloading icp4d installer"
-filename=$(basename $icp4d_tarball)
-wget -nv --continue ${icp4d_tarball} -O /ibm/$filename
-chmod a+x /ibm/$filename
-echo "installing icp4d..."
-cd /ibm
-./$filename --load-balancer --accept-license
-if [[ $? -ne 0 ]];then
-    echo "error installing icp4d,please check log under /ibm/InstallPacakge/tmp for details"
+if [[ "$image_location_key" != "" ]];then
+    filename=$(basename $image_location_icp4d)
+    wget -nv --continue $image_location_icp4d -O /ibm/$filename
+    chmod a+x /ibm/$filename
+    echo "installing icp4d..."
+    cd /ibm
+    ./$filename --load-balancer --accept-license
+    if [[ $? -ne 0 ]];then
+        echo "error installing icp4d,please check log under /ibm/InstallPacakge/tmp for details"
+    fi
+else
+    azCopyBin=$(which azcopy)
+    if [[ $? -ne 0 ]];then
+        echo "not able to download ICP4D image, please download manually"
+        return
+    fi
+
+    if [[ "$image_location_icp4d" != "" ]];then
+        if mount | grep /ibm > /dev/null 2>&1;then
+            icp4d_image=$(basename $image_location)
+            echo "downloading ICP4D image"
+            $azCopyBin --source $image_location_icp4d --source-key $image_location_key --destination /ibm/$icp4d_image > /dev/null
+        fi
+    fi
 fi
