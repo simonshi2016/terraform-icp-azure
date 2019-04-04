@@ -143,7 +143,7 @@ module "icpprovision" {
   ssh_agent	       = "false"
 
   hooks = {
-    "cluster-preconfig"  = ["echo -n"]
+    "cluster-preconfig"  = ["echo ${local.image_location}"]
     "cluster-postconfig" = ["echo -n"]
     "boot-preconfig"     = ["echo -n"]
     "preinstall"         = ["echo ${local.info}"]

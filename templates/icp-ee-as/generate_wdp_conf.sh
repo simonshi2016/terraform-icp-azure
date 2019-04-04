@@ -86,10 +86,11 @@ rm -rf /tmp/tmp_key
 
 if [[ "$image_location_icp4d" == "" ]];then
     echo "icp4d is ready to be installed"
+    exit 0
 fi
 
-echo "downloading icp4d installer"
-if [[ "$image_location_key" != "" ]];then
+if [[ "$image_location_key" == "" ]];then
+    echo "downloading icp4d installer"
     filename=$(basename $image_location_icp4d)
     wget -nv --continue $image_location_icp4d -O /ibm/$filename
     chmod a+x /ibm/$filename
