@@ -34,7 +34,7 @@ module "icpprovision" {
   icp-host-groups = {
     master      = ["${azurerm_network_interface.master_nic.*.private_ip_address}"]
     worker      = ["${azurerm_network_interface.worker_nic.*.private_ip_address}"]
-    proxy       = ["${azurerm_network_interface.proxy_nic.*.private_ip_address}"]
+    proxy       = ["${azurerm_network_interface.master_nic.*.private_ip_address}"]
     #management  = ["${azurerm_network_interface.management_nic.*.private_ip_address}"]
     management  = "${slice(
       concat(azurerm_network_interface.management_nic.*.private_ip_address, azurerm_network_interface.master_nic.*.private_ip_address),

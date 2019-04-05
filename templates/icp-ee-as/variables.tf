@@ -141,7 +141,7 @@ variable "master" {
   default = {
     nodes         = "3"
     name          = "master"
-    vm_size       = "Standard_F8s_v2"
+    vm_size       = "Standard_F16s_v2"
     os_disk_type  = "Premium_LRS"
     os_disk_size  = "250"
     docker_disk_size = "200"
@@ -158,7 +158,7 @@ variable "master" {
 variable "proxy" {
   type = "map"
   default = {
-    nodes         = "2"
+    nodes         = "0"
     name          = "proxy"
     vm_size       = "Standard_D8_v3"
     os_disk_type  = "StandardSSD_LRS"
