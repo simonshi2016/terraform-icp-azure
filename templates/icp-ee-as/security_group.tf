@@ -108,6 +108,30 @@ resource "azurerm_network_security_group" "master_sg" {
     destination_address_prefix = "*"
   }
   security_rule {
+    name                       = "${var.cluster_name}-${var.proxy["name"]}-https-ingress"
+    description                = "Allow inbound https ingress from all locations"
+    priority                   = 610
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  security_rule {
+    name                       = "${var.cluster_name}-${var.proxy["name"]}-http-ingress"
+    description                = "Allow inbound http ingress from all locations"
+    priority                   = 620
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  security_rule {
     name                       = "${var.cluster_name}-${var.master["name"]}-liberty"
     description                = "Allow inbound Liberty from all locations"
     priority                   = 700

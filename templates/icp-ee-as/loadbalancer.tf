@@ -81,8 +81,8 @@ resource "azurerm_lb_backend_address_pool" "proxylb_pool" {
 
 # Associate proxies with proxy LB
 resource "azurerm_network_interface_backend_address_pool_association" "proxylb" {
-  count                   = "${var.proxy["nodes"]}"
-  network_interface_id    = "${element(azurerm_network_interface.proxy_nic.*.id, count.index)}"
-  ip_configuration_name   = "primary"
+  count                   = "${var.proxy["nodes"] != "0" ? var.proxy["nodes"] : var.master["nodes"]}"
+  network_interface_id    = "${element(concat(azurerm_network_interface.proxy_nic.*.id,azurerm_network_interface.master_nic.*.id),count.index)}"
+  ip_configuration_name   = "${var.proxy["nodes"] == "0" ? "MasterIPAddress" : "primary"}"
   backend_address_pool_id = "${azurerm_lb_backend_address_pool.proxylb_pool.id}"
 }
