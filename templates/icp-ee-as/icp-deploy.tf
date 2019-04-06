@@ -20,6 +20,7 @@ locals {
   image_location   = "${var.image_location != "default" && substr(var.image_location,0,5) == "https" && var.image_location_key == "" ? var.image_location : 
                         var.image_location != "default" && var.image_location_key == "" ? "${element(concat(azurerm_storage_blob.icpimage.*.url, list("")),0)}" : ""}"
   info = "${var.image_location_key != "" ? "${element(concat(null_resource.master_load_pkg.*.id, list("")),0)}" : ""}"
+  proxyAddresses   = "${split(",", var.proxy["nodes"] == "0" ? join(",",azurerm_network_interface.master_nic.*.private_ip_address) : join(",",azurerm_network_interface.proxy_nic.*.private_ip_address))}"
 }
 
 module "icpprovision" {
@@ -34,7 +35,8 @@ module "icpprovision" {
   icp-host-groups = {
     master      = ["${azurerm_network_interface.master_nic.*.private_ip_address}"]
     worker      = ["${azurerm_network_interface.worker_nic.*.private_ip_address}"]
-    proxy       = ["${azurerm_network_interface.master_nic.*.private_ip_address}"]
+    #proxy       = ["${azurerm_network_interface.master_nic.*.private_ip_address}"]
+    proxy       = "${local.proxyAddresses}"
     #management  = ["${azurerm_network_interface.management_nic.*.private_ip_address}"]
     management  = "${slice(
       concat(azurerm_network_interface.management_nic.*.private_ip_address, azurerm_network_interface.master_nic.*.private_ip_address),
