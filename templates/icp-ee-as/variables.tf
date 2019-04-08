@@ -127,7 +127,7 @@ variable "boot" {
   default = {
     nodes         = "1"
     name          = "bootnode"
-    vm_size       = "Standard_D4_v3"
+    vm_size       = "Standard_A4_v2"
     os_disk_type  = "StandardSSD_LRS"
     os_disk_size  = "100"
     docker_disk_size = "100"
