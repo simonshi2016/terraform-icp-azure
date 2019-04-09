@@ -59,6 +59,8 @@ resource "azurerm_storage_blob" "icpimage" {
   resource_group_name    = "${azurerm_resource_group.icp.name}"
   storage_account_name   = "${azurerm_storage_account.blobstorage.name}"
   storage_container_name = "${azurerm_storage_container.images.name}"
+  parallelism=8
+  attempts=3
 }
 
 # create the resource only if not yet pre-uploaded
@@ -70,4 +72,6 @@ resource "azurerm_storage_blob" "icp4dimage" {
   resource_group_name    = "${azurerm_resource_group.icp.name}"
   storage_account_name   = "${azurerm_storage_account.blobstorage.name}"
   storage_container_name = "${azurerm_storage_container.images.name}"
+  parallelism=8
+  attempts=3
 }
