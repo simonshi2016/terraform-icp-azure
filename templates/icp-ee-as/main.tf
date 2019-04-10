@@ -13,7 +13,19 @@ provider "azurerm" {
 ##################################
 ## Create a resource group
 ##################################
+
+locals {
+  rg_name="${var.resource_group == "icp_rg" ? element(concat(azurerm_resource_group.icp.*.name,list("")),0)  : element(concat(data.azurerm_resource_group.icp_existing.*.name,list("")),0)}"
+  location = "${var.resource_group == "icp_rg" ? var.location : element(concat(data.azurerm_resource_group.icp_existing.*.location,list("")),0)}"
+}
+
+data "azurerm_resource_group" "icp_existing" {
+  count = "${var.resource_group != "icp_rg" ? 1 : 0}"
+  name = "${var.resource_group}"
+}
+
 resource "azurerm_resource_group" "icp" {
+  count    = "${var.resource_group != "icp_rg" ? 0 : 1}"
   name     = "${var.resource_group}_${random_id.clusterid.id}"
   location = "${var.location}"
 
@@ -24,6 +36,7 @@ resource "azurerm_resource_group" "icp" {
     )
   )}"
 }
+
 ##################################
 ## Create the SSH key terraform will use for installation
 ##################################

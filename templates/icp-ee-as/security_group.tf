@@ -1,8 +1,8 @@
 #Network Security Group - BootNode
 resource "azurerm_network_security_group" "boot_sg" {
   name                = "${var.cluster_name}-${var.boot["name"]}-sg"
-  location            = "${azurerm_resource_group.icp.location}"
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  location            = "${local.location}"
+  resource_group_name = "${local.rg_name}"
 
   security_rule {
     name                       = "${var.cluster_name}-${var.boot["name"]}-ssh"
@@ -20,8 +20,8 @@ resource "azurerm_network_security_group" "boot_sg" {
 #Network Security Group - Master
 resource "azurerm_network_security_group" "master_sg" {
   name                = "${var.cluster_name}-${var.master["name"]}-sg"
-  location            = "${azurerm_resource_group.icp.location}"
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  location            = "${local.location}"
+  resource_group_name = "${local.rg_name}"
 
   security_rule {
     name                       = "${var.cluster_name}-${var.master["name"]}-ssh"
@@ -159,8 +159,8 @@ resource "azurerm_network_security_group" "master_sg" {
 #Network Security Group - Proxy
 resource "azurerm_network_security_group" "proxy_sg" {
   name                = "${var.cluster_name}-${var.proxy["name"]}-sg"
-  location            = "${azurerm_resource_group.icp.location}"
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  location            = "${local.location}"
+  resource_group_name = "${local.rg_name}"
 
   # security_rule {
   #   name                       = "${var.cluster_name}-${var.proxy["name"]}-ssh"
@@ -216,8 +216,8 @@ resource "azurerm_network_security_group" "proxy_sg" {
 #Network Security Group - Management and Worker
 resource "azurerm_network_security_group" "worker_sg" {
   name                = "${var.cluster_name}-worker-sg"
-  location            = "${azurerm_resource_group.icp.location}"
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  location            = "${local.location}"
+  resource_group_name = "${local.rg_name}"
 
   # security_rule {
   #   name                       = "${var.cluster_name}-worker-ssh"

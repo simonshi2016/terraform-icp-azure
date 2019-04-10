@@ -6,7 +6,7 @@ resource "azurerm_lb" "controlplane" {
   name                = "ControlPlaneLB"
   location            = "${var.location}"
   sku                 = "Standard"
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  resource_group_name = "${local.rg_name}"
 
   frontend_ip_configuration {
     name                 = "MasterIPAddress"
@@ -17,7 +17,7 @@ resource "azurerm_lb" "controlplane" {
 
 # # Use NAT for SSH to avoid extra bastion host
 # resource "azurerm_lb_nat_rule" "ssh_nat" {
-#   resource_group_name            = "${azurerm_resource_group.icp.name}"
+#   resource_group_name            = "${local.rg_name}"
 #   loadbalancer_id                = "${azurerm_lb.controlplane.id}"
 #   name                           = "SSHAccess"
 #   protocol                       = "Tcp"
@@ -29,7 +29,7 @@ resource "azurerm_lb" "controlplane" {
 # Create a rule per port in var.master_lb_ports
 resource "azurerm_lb_rule" "master_rule" {
   count                          = "${length(var.master_lb_ports)}"
-  resource_group_name            = "${azurerm_resource_group.icp.name}"
+  resource_group_name            = "${local.rg_name}"
   loadbalancer_id                = "${azurerm_lb.controlplane.id}"
   name                           = "Masterport${element(var.master_lb_ports, count.index)}"
   protocol                       = "Tcp"
@@ -40,7 +40,7 @@ resource "azurerm_lb_rule" "master_rule" {
 }
 
 resource "azurerm_lb_backend_address_pool" "masterlb_pool" {
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  resource_group_name = "${local.rg_name}"
   loadbalancer_id     = "${azurerm_lb.controlplane.id}"
   name                = "MasterAddressPool"
 }
@@ -63,7 +63,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "masterlb"
 # Create a rule per port in var.master_lb_ports
 resource "azurerm_lb_rule" "proxy_rule" {
   count                          = "${length(var.proxy_lb_ports)}"
-  resource_group_name            = "${azurerm_resource_group.icp.name}"
+  resource_group_name            = "${local.rg_name}"
   loadbalancer_id                = "${azurerm_lb.controlplane.id}"
   name                           = "Proxyport${element(var.proxy_lb_ports, count.index)}"
   protocol                       = "Tcp"
@@ -74,7 +74,7 @@ resource "azurerm_lb_rule" "proxy_rule" {
 }
 
 resource "azurerm_lb_backend_address_pool" "proxylb_pool" {
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  resource_group_name = "${local.rg_name}"
   loadbalancer_id     = "${azurerm_lb.controlplane.id}"
   name                = "ProxyAddressPool"
 }

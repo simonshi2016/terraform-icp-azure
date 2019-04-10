@@ -15,7 +15,7 @@
 #########
 resource "azurerm_storage_account" "infrastructure" {
   name                     = "infrastructure${random_id.clusterid.hex}"
-  resource_group_name      = "${azurerm_resource_group.icp.name}"
+  resource_group_name      = "${local.rg_name}"
   location                 = "${var.location}"
   account_tier             = "${var.storage_account_tier}"
   account_replication_type = "${var.storage_replication_type}"
@@ -28,7 +28,7 @@ resource "azurerm_storage_account" "infrastructure" {
 resource "azurerm_storage_share" "icpregistry" {
   name = "icpregistry"
 
-  resource_group_name  = "${azurerm_resource_group.icp.name}"
+  resource_group_name  = "${local.rg_name}"
   storage_account_name = "${azurerm_storage_account.infrastructure.name}"
   quota = 300
 }
@@ -36,7 +36,7 @@ resource "azurerm_storage_share" "icpregistry" {
 # blob storage account for uploading images
 resource "azurerm_storage_account" "blobstorage" {
   name                     = "icp4d${random_id.clusterid.hex}"
-  resource_group_name      = "${azurerm_resource_group.icp.name}"
+  resource_group_name      = "${local.rg_name}"
   location                 = "${var.location}"
   account_tier             = "${var.storage_account_tier}"
   account_replication_type = "${var.storage_replication_type}"
@@ -45,7 +45,7 @@ resource "azurerm_storage_account" "blobstorage" {
 
 resource "azurerm_storage_container" "images" {
   name                  = "icpimages"
-  resource_group_name   = "${azurerm_resource_group.icp.name}"
+  resource_group_name   = "${local.rg_name}"
   storage_account_name  = "${azurerm_storage_account.blobstorage.name}"
   container_access_type = "blob"
 }
@@ -56,7 +56,7 @@ resource "azurerm_storage_blob" "icpimage" {
   name = "${basename(var.image_location)}"
   source = "${var.image_location}"
   type="block"
-  resource_group_name    = "${azurerm_resource_group.icp.name}"
+  resource_group_name    = "${local.rg_name}"
   storage_account_name   = "${azurerm_storage_account.blobstorage.name}"
   storage_container_name = "${azurerm_storage_container.images.name}"
   parallelism=8
@@ -69,7 +69,7 @@ resource "azurerm_storage_blob" "icp4dimage" {
   name = "${basename(var.image_location_icp4d)}"
   source = "${var.image_location_icp4d}"
   type="block"
-  resource_group_name    = "${azurerm_resource_group.icp.name}"
+  resource_group_name    = "${local.rg_name}"
   storage_account_name   = "${azurerm_storage_account.blobstorage.name}"
   storage_container_name = "${azurerm_storage_container.images.name}"
   parallelism=8

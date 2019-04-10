@@ -20,6 +20,7 @@ locals {
   image_location   = "${var.image_location != "default" && substr(var.image_location,0,5) == "https" && var.image_location_key == "" ? var.image_location : 
                         var.image_location != "default" && var.image_location_key == "" ? "${element(concat(azurerm_storage_blob.icpimage.*.url, list("")),0)}" : ""}"
   info = "${var.image_location_key != "" ? "${element(concat(null_resource.master_load_pkg.*.id, list("")),0)}" : ""}"
+  cluster_dependency = "${length(concat(azurerm_virtual_machine.boot.*.id, azurerm_virtual_machine.master.*.id, azurerm_virtual_machine.worker.*.id, azurerm_virtual_machine.management.*.id))}"
 }
 
 module "icpprovision" {
@@ -102,7 +103,7 @@ module "icpprovision" {
           "useInstanceMetadata" = "true"
           "tenantId"            = "${data.azurerm_client_config.client_config.tenant_id}"
           "subscriptionId"      = "${data.azurerm_client_config.client_config.subscription_id}"
-          "resourceGroup"       = "${azurerm_resource_group.icp.name}"
+          "resourceGroup"       = "${local.rg_name}"
           "useManagedIdentityExtension" = "true"
       }
 
@@ -111,13 +112,13 @@ module "icpprovision" {
           "useInstanceMetadata" = "true"
           "tenantId"            = "${data.azurerm_client_config.client_config.tenant_id}"
           "subscriptionId"      = "${data.azurerm_client_config.client_config.subscription_id}"
-          "resourceGroup"       = "${azurerm_resource_group.icp.name}"
+          "resourceGroup"       = "${local.rg_name}"
           "aadClientId"         = "${var.aadClientId}"
           "aadClientSecret"     = "${var.aadClientSecret}"
-          "location"            = "${azurerm_resource_group.icp.location}"
+          "location"            = "${local.location}"
           "subnetName"          = "${azurerm_subnet.container_subnet.name}"
           "vnetName"            = "${azurerm_virtual_network.icp_vnet.name}"
-          "vnetResourceGroup"   = "${azurerm_resource_group.icp.name}"
+          "vnetResourceGroup"   = "${local.rg_name}"
           "routeTableName"      = "${azurerm_route_table.routetb.name}"
           "cloudProviderBackoff"        = "false"
           "loadBalancerSku"             = "Standard"
@@ -144,7 +145,7 @@ module "icpprovision" {
   ssh_agent	       = "false"
 
   hooks = {
-    "cluster-preconfig"  = ["echo ${local.image_location}"]
+    "cluster-preconfig"  = ["echo ${local.cluster_dependency}"]
     "cluster-postconfig" = ["echo -n"]
     "boot-preconfig"     = ["echo -n"]
     "preinstall"         = ["echo ${local.info}"]

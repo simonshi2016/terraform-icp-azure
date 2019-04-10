@@ -6,8 +6,8 @@
 
 resource "azurerm_availability_set" "controlplane" {
   name                = "controlpane_availabilityset"
-  location            = "${azurerm_resource_group.icp.location}"
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  location            = "${local.location}"
+  resource_group_name = "${local.rg_name}"
   managed             = true
 
   tags {
@@ -17,8 +17,8 @@ resource "azurerm_availability_set" "controlplane" {
 
 resource "azurerm_availability_set" "management" {
   name                = "management_availabilityset"
-  location            = "${azurerm_resource_group.icp.location}"
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  location            = "${local.location}"
+  resource_group_name = "${local.rg_name}"
   managed             = true
 
   tags {
@@ -28,8 +28,8 @@ resource "azurerm_availability_set" "management" {
 
 resource "azurerm_availability_set" "proxy" {
   name                = "proxy_availabilityset"
-  location            = "${azurerm_resource_group.icp.location}"
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  location            = "${local.location}"
+  resource_group_name = "${local.rg_name}"
   managed             = true
 
   tags {
@@ -40,8 +40,8 @@ resource "azurerm_availability_set" "proxy" {
 #
 resource "azurerm_availability_set" "workers" {
   name                = "workers_availabilityset"
-  location            = "${azurerm_resource_group.icp.location}"
-  resource_group_name = "${azurerm_resource_group.icp.name}"
+  location            = "${local.location}"
+  resource_group_name = "${local.rg_name}"
   managed             = true
 
   tags {
@@ -56,7 +56,7 @@ resource "azurerm_virtual_machine" "boot" {
   count                 = "${var.boot["nodes"]}"
   name                  = "${var.boot["name"]}${count.index + 1}"
   location              = "${var.location}"
-  resource_group_name   = "${azurerm_resource_group.icp.name}"
+  resource_group_name   = "${local.rg_name}"
   vm_size               = "${var.boot["vm_size"]}"
   network_interface_ids = ["${element(azurerm_network_interface.boot_nic.*.id, count.index)}"]
 
@@ -113,7 +113,7 @@ resource "azurerm_virtual_machine" "master" {
   count                 = "${var.master["nodes"]}"
   name                  = "${var.master["name"]}${count.index + 1}"
   location              = "${var.location}"
-  resource_group_name   = "${azurerm_resource_group.icp.name}"
+  resource_group_name   = "${local.rg_name}"
   vm_size               = "${var.master["vm_size"]}"
   network_interface_ids = ["${element(azurerm_network_interface.master_nic.*.id, count.index)}"]
 
@@ -246,7 +246,7 @@ resource "azurerm_virtual_machine" "proxy" {
   count                 = "${var.proxy["nodes"]}"
   name                  = "${var.proxy["name"]}${count.index + 1}"
   location              = "${var.location}"
-  resource_group_name   = "${azurerm_resource_group.icp.name}"
+  resource_group_name   = "${local.rg_name}"
   vm_size               = "${var.proxy["vm_size"]}"
   network_interface_ids = ["${element(azurerm_network_interface.proxy_nic.*.id, count.index)}"]
 
@@ -303,7 +303,7 @@ resource "azurerm_virtual_machine" "management" {
   count                 = "${var.management["nodes"]}"
   name                  = "${var.management["name"]}${count.index + 1}"
   location              = "${var.location}"
-  resource_group_name   = "${azurerm_resource_group.icp.name}"
+  resource_group_name   = "${local.rg_name}"
   vm_size               = "${var.management["vm_size"]}"
   network_interface_ids = ["${element(azurerm_network_interface.management_nic.*.id, count.index)}"]
 
@@ -362,7 +362,7 @@ resource "azurerm_virtual_machine" "worker" {
   count                 = "${var.worker["nodes"]}"
   name                  = "${var.worker["name"]}${count.index + 1}"
   location              = "${var.location}"
-  resource_group_name   = "${azurerm_resource_group.icp.name}"
+  resource_group_name   = "${local.rg_name}"
   vm_size               = "${var.worker["vm_size"]}"
   network_interface_ids = ["${element(azurerm_network_interface.worker_nic.*.id, count.index)}"]
 
