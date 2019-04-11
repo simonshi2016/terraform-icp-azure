@@ -205,10 +205,20 @@ variable "master_lb_ports" {
   default     = ["8443", "8001", "8500", "8600", "4300", "9443", "31843"]
 }
 
+variable "master_lb_additional_ports" {
+  type        = "list"
+  default     = []
+}
+
 variable "proxy_lb_ports" {
   description = "Ports on the master load balancer to listen to"
   type        = "list"
   default     = ["80", "443"]
+}
+
+variable "proxy_lb_additional_ports" {
+  type        ="list"
+  default     =[]
 }
 
 ## IAM options for kubelet and controller manager

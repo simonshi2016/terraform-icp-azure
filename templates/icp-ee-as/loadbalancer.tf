@@ -1,6 +1,11 @@
 #######
 ## Load balancers and rules
 ######
+locals {
+  proxy_lb_ports ="${concat(var.proxy_lb_ports,var.proxy_lb_additional_ports)}"
+  master_lb_ports="${concat(var.master_lb_ports,var.master_lb_additional_ports)}"
+}
+
 resource "azurerm_lb" "controlplane" {
   depends_on          = ["azurerm_public_ip.master_pip"]
   name                = "ControlPlaneLB"
@@ -28,13 +33,13 @@ resource "azurerm_lb" "controlplane" {
 
 # Create a rule per port in var.master_lb_ports
 resource "azurerm_lb_rule" "master_rule" {
-  count                          = "${length(var.master_lb_ports)}"
+  count                          = "${length(local.master_lb_ports)}"
   resource_group_name            = "${local.rg_name}"
   loadbalancer_id                = "${azurerm_lb.controlplane.id}"
-  name                           = "Masterport${element(var.master_lb_ports, count.index)}"
+  name                           = "Masterport${local.master_lb_ports[count.index]}"
   protocol                       = "Tcp"
-  frontend_port                  = "${element(var.master_lb_ports, count.index)}"
-  backend_port                   = "${element(var.master_lb_ports, count.index)}"
+  frontend_port                  = "${local.master_lb_ports[count.index]}"
+  backend_port                   = "${local.master_lb_ports[count.index]}"
   backend_address_pool_id        = "${azurerm_lb_backend_address_pool.masterlb_pool.id}"
   frontend_ip_configuration_name = "MasterIPAddress"
 }
@@ -60,15 +65,15 @@ resource "azurerm_network_interface_backend_address_pool_association" "masterlb"
 #   nat_rule_id           = "${azurerm_lb_nat_rule.ssh_nat.id}"
 # }
 
-# Create a rule per port in var.master_lb_ports
+# Create a rule per port in var.proxy_lb_ports
 resource "azurerm_lb_rule" "proxy_rule" {
-  count                          = "${length(var.proxy_lb_ports)}"
+  count                          = "${length(local.proxy_lb_ports)}"
   resource_group_name            = "${local.rg_name}"
   loadbalancer_id                = "${azurerm_lb.controlplane.id}"
-  name                           = "Proxyport${element(var.proxy_lb_ports, count.index)}"
+  name                           = "Proxyport${local.proxy_lb_ports[count.index]}"
   protocol                       = "Tcp"
-  frontend_port                  = "${element(var.proxy_lb_ports, count.index)}"
-  backend_port                   = "${element(var.proxy_lb_ports, count.index)}"
+  frontend_port                  = "${local.proxy_lb_ports[count.index]}"
+  backend_port                   = "${local.proxy_lb_ports[count.index]}"
   backend_address_pool_id        = "${azurerm_lb_backend_address_pool.proxylb_pool.id}"
   frontend_ip_configuration_name = "MasterIPAddress"
 }

@@ -18,6 +18,10 @@ output "ICP Admin Password" {
   value = "${module.icpprovision.default_admin_password}"
 }
 
+output "ICP for Data Admin Console URL" {
+  value = "https://${element(azurerm_public_ip.master_pip.*.fqdn, 0)}:31843"
+}
+
 output "cloudctl" {
   value = "cloudctl login --skip-ssl-validation -a https://${element(azurerm_public_ip.master_pip.*.fqdn, 0)}:8443 -u admin -p ${module.icpprovision.default_admin_password} -n default -c id-${var.cluster_name}-account"
 }
