@@ -175,6 +175,10 @@ write_files:
   permissions: '0755'
   encoding: b64
   content: ${base64encode(file("${path.module}/generate_wdp_conf.sh"))}
+- path: /tmp/install_icp4d.sh
+  permissions: '0755'
+  encoding: b64
+  content: ${base64encode(file("${path.module}/install_icp4d.sh"))}
 - path: /tmp/load_package.sh
   permissions: '0755'
   encoding: b64

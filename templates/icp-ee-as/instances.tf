@@ -198,10 +198,24 @@ resource "azurerm_virtual_machine" "master" {
 locals {
   image_location_icp4d="${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) == "https" ? "var.image_location_icp4d" : 
                           var.image_location_icp4d != "default" ? "${element(concat(azurerm_storage_blob.icp4dimage.*.url,list("")),0)}" : ""}"
+  image_location_key  ="${var.image_location_key != "" ? var.image_location_key : 
+                          var.image_location_icp4d != "default" ? "${azurerm_storage_account.blobstorage.primary_access_key}" : ""}"
+  image_location_icp4d_local="${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,1) == "/" ? "${var.image_location_icp4d}" : ""}"
 }
 
+# wait until icp4d is done, create resource only when we upload icp4d
+resource "null_resource" "upload_icp4d_modules" {
+  count = "${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) != "https" && var.image_location_key == "" ? 1 : 0}"
+  depends_on=["azurerm_storage_blob.icp4dimage"]
+
+  provisioner "local-exec" {
+    command = "bash -x ./upload_modules.sh '${local.image_location_icp4d_local}' '${local.image_location_icp4d}' '${local.image_location_key}'"
+  }
+}
+
+# boot node is needed as connection bastion
 resource "null_resource" "master_icp4d_install" {
-  depends_on=["azurerm_virtual_machine.boot","azurerm_virtual_machine.master","azurerm_storage_blob.icp4dimage"]
+  depends_on=["azurerm_virtual_machine.boot", "azurerm_virtual_machine.master", "null_resource.upload_icp4d_modules"]
 
   connection {
     host = "${azurerm_network_interface.master_nic.0.private_ip_address}"
@@ -210,12 +224,13 @@ resource "null_resource" "master_icp4d_install" {
     agent = "false"
     bastion_host="${element(azurerm_public_ip.bootnode_pip.*.ip_address,0)}"
   }
-
+  
   # "echo" for creating dependency on module output, v0.12 has explicit depends_on=["module.icpprovision.install_complete"]
   provisioner "remote-exec" {
     inline = [
       "echo ${module.icpprovision.install_complete}",
-      "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${local.image_location_icp4d}' '${var.image_location_key}' '${var.nfsmount}'"
+      "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.nfsmount}'",
+      "sudo bash -x /tmp/install_icp4d.sh '${local.image_location_icp4d}' '${local.image_location_key}'"
     ]
   }
 }

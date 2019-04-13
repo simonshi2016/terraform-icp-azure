@@ -63,8 +63,9 @@ resource "azurerm_storage_blob" "icpimage" {
   attempts=3
 }
 
-# create the resource only if not yet pre-uploaded
+# create the resource only if not yet pre-uploaded, wait until icp upload is done
 resource "azurerm_storage_blob" "icp4dimage" {
+  depends_on = ["azurerm_storage_blob.icpimage"]
   count = "${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) != "https" && var.image_location_key == "" ? 1 : 0}"
   name = "${basename(var.image_location_icp4d)}"
   source = "${var.image_location_icp4d}"
