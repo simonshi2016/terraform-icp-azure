@@ -221,6 +221,10 @@ variable "proxy_lb_additional_ports" {
   default     =[]
 }
 
+variable "lb_probe_load_distribution" {
+  default     = "SourceIPProtocol"
+}
+
 ## IAM options for kubelet and controller manager
 variable "aadClientId" {
   description = "aadClientId to be provided to kubernetes controller manager"
