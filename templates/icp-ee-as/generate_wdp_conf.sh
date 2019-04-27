@@ -72,7 +72,7 @@ if [[ -f /opt/ibm/cluster/config.yaml ]];then
     fi
 fi
 
-echo "overlay_network=${network_cidr}" >> tmp/wdp.conf
+echo "overlay_network=${network_cidr}" >> /tmp/wdp.conf
 
 # add cloud additional data
 echo "cloud=azure" >> /tmp/wdp.conf
