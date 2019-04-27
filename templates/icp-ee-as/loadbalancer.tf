@@ -35,7 +35,7 @@ resource "azurerm_lb_probe" "master_lb_port_probe" {
   count               = "${length(local.master_lb_ports)}"
   resource_group_name = "${local.rg_name}"
   loadbalancer_id     = "${azurerm_lb.controlplane.id}"
-  name                = "Masterportprobe{local.master_lb_ports[count.index]}"
+  name                = "Masterportprobe${local.master_lb_ports[count.index]}"
   port                = "${local.master_lb_ports[count.index]}"
 }
 
@@ -51,7 +51,7 @@ resource "azurerm_lb_rule" "master_rule" {
   backend_address_pool_id        = "${azurerm_lb_backend_address_pool.masterlb_pool.id}"
   frontend_ip_configuration_name = "MasterIPAddress"
   load_distribution              = "${var.lb_probe_load_distribution}"
-  probe_id                       = "${element(azurerm_lb_probe.master_lb_port_probe.*.id, count.index)}"
+  probe_id                       = "${element(concat(azurerm_lb_probe.master_lb_port_probe.*.id,list("")), count.index)}"
 }
 
 resource "azurerm_lb_backend_address_pool" "masterlb_pool" {
