@@ -136,7 +136,7 @@ EOF
 data "template_file" "load_tarball" {
   template = <<EOF
 #!/bin/bash
-image_file="$(basename $${tarball})"
+image_file="$(basename $${image_location_icp})"
 
 cd /tmp
 wget -O azcopy.tar.gz https://aka.ms/downloadazcopylinux64
@@ -144,7 +144,7 @@ tar -xf azcopy.tar.gz
 sudo ./install.sh
 
 mkdir -p /opt/ibm/cluster/images
-azcopy --source $${tarball} --source-key $${key} --destination /opt/ibm/cluster/images/$image_file
+azcopy --source $${image_location_icp} --source-key $${image_location_key} --destination /opt/ibm/cluster/images/$image_file
 
 # For now we need to install docker here, line up with 3.0.2 plugin
 wget https://raw.githubusercontent.com/ibm-cloud-architecture/terraform-module-icp-deploy/3.0.2/scripts/boot-master/install-docker.sh
@@ -158,8 +158,8 @@ tar xf /opt/ibm/cluster/images/$image_file -O | sudo docker load
 EOF
 
   vars {
-    tarball = "${var.image_location}"
-    key     = "${var.image_location_key}"
+    image_location_icp = "${var.image_location}"
+    image_location_key = "${var.image_location_key}"
   }
 }
 
@@ -186,12 +186,9 @@ write_files:
 mounts:
 - [ ${element(split(":", azurerm_storage_share.icpregistry.url), 1)}, /var/lib/registry, cifs, "nofail,credentials=/etc/smbcredentials/icpregistry.cred,dir_mode=0777,file_mode=0777,serverino" ]
 EOF
-
   vars {
     username= "${azurerm_storage_account.infrastructure.name}"
     password= "${azurerm_storage_account.infrastructure.primary_access_key}"
-    tarball = "${var.image_location}"
-    key     = "${var.image_location_key}"
   }
 }
 
@@ -199,33 +196,13 @@ data "template_file" "master_load_tarball" {
   count = "${var.master["nodes"]}"
   template = <<EOF
 #!/bin/bash
-if [[ "$${master_idx}" == "0" ]] && [[ "$$tarball" != "" ]] && [[ "$$key" != "" ]];then
-cd /tmp
-wget -O azcopy.tar.gz https://aka.ms/downloadazcopylinux64
-tar -xf azcopy.tar.gz
-sudo ./install.sh
-
-echo "copying image..."
-image_file="$(basename $${tarball})"
-mkdir -p /opt/ibm/cluster/images
-azcopy --source $${tarball} --source-key $${key} --destination /opt/ibm/cluster/images/$image_file
-
-# For now we need to install docker here, line up with 3.0.2 plugin
-echo "Installing Docker.."
-wget https://raw.githubusercontent.com/ibm-cloud-architecture/terraform-module-icp-deploy/3.0.2/scripts/boot-master/install-docker.sh
-chmod a+x install-docker.sh
-sudo chmod 777 /tmp
-./install-docker.sh -i docker-ce -v latest
-fi
-
-tar -xzf $image_file -O | docker load >&2
-touch .load_package_finished
+/tmp/load_package.sh $${image_location_icp} $${image_location_key} ${var.icp_inception_image} $${master_idx}
 EOF
 
   vars {
     master_idx = "${count.index}"
-    tarball = "${substr(var.image_location,0,5) == "https" ? var.image_location : ""}"
-    key     = "${var.image_location_key}"
+    image_location_icp="${local.image_location}"
+    image_location_key="${local.image_location_key}"
   }
 }
 
@@ -297,10 +274,10 @@ data "template_cloudinit_config" "masterconfig" {
     content      =  "${data.template_file.master_config.rendered}"
   }
 
- # part {
- #   content_type = "text/x-shellscript"
- #   content      = "${element(data.template_file.master_load_tarball.*.rendered,count.index)}"
- # }
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${element(data.template_file.master_load_tarball.*.rendered,count.index)}"
+  }
 
   part {
     content_type = "text/x-shellscript"

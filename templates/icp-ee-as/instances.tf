@@ -196,7 +196,7 @@ resource "azurerm_virtual_machine" "master" {
 }
 
 locals {
-  image_location_icp4d="${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) == "https" ? "var.image_location_icp4d" : 
+  image_location_icp4d="${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,5) == "https" ? var.image_location_icp4d : 
                           var.image_location_icp4d != "default" ? "${element(concat(azurerm_storage_blob.icp4dimage.*.url,list("")),0)}" : ""}"
   image_location_key  ="${var.image_location_key != "" ? var.image_location_key : 
                           var.image_location_icp4d != "default" ? "${azurerm_storage_account.blobstorage.primary_access_key}" : ""}"
@@ -210,6 +210,26 @@ resource "null_resource" "upload_icp4d_modules" {
 
   provisioner "local-exec" {
     command = "bash -x ./upload_modules.sh '${local.image_location_icp4d_local}' '${local.image_location_icp4d}' '${local.image_location_key}'"
+  }
+}
+
+# boot node is needed as connection bastion
+resource "null_resource" "wait_nodes_ready" {
+  depends_on=["azurerm_virtual_machine.boot", "azurerm_virtual_machine.master"]
+  count=1
+
+  connection {
+    host = "${azurerm_network_interface.master_nic.0.private_ip_address}"
+    user = "icpdeploy"
+    private_key = "${tls_private_key.installkey.private_key_pem}"
+    agent = "false"
+    bastion_host="${element(azurerm_public_ip.bootnode_pip.*.ip_address,0)}"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "while [ ! -f /var/lib/cloud/instance/boot-finished ];do sleep 30; done"
+    ]
   }
 }
 
@@ -231,25 +251,6 @@ resource "null_resource" "master_icp4d_install" {
       "echo ${module.icpprovision.install_complete}",
       "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.nfsmount}'",
       "sudo bash -x /tmp/install_icp4d.sh '${local.image_location_icp4d}' '${local.image_location_key}'"
-    ]
-  }
-}
-
-resource "null_resource" "master_load_pkg" {
-  depends_on=["azurerm_virtual_machine.master"]
-  count="${var.image_location_key == "" ? 0 : 1}"
-
-  connection {
-    host = "${azurerm_network_interface.master_nic.0.private_ip_address}"
-    user = "icpdeploy"
-    private_key = "${tls_private_key.installkey.private_key_pem}"
-    agent = "false"
-    bastion_host="${element(azurerm_public_ip.bootnode_pip.*.ip_address,0)}"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo bash /tmp/load_package.sh ${var.image_location} ${var.image_location_key}"
     ]
   }
 }

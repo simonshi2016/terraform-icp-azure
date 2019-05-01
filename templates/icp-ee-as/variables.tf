@@ -254,11 +254,13 @@ variable "registry_password" {
   default     = ""
 }
 
+# "https": pre-uploaded,"/": local filesystem, "default": registry
 variable "image_location" {
   description = "Location of ICP image tarball. Assumes stored as azure blob, default value for registry install, to walkaround terraform issue"
   default     = "default"
 }
 
+# "https": pre-uploaded, "": local filesystem and registry
 variable "image_location_key" {
   description = "Access key to download the ICP image tarball"
   default     = ""
