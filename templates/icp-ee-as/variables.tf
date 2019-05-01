@@ -193,7 +193,7 @@ variable "worker" {
     docker_disk_type = "Premium_LRS"
     ibm_disk_size    = "300"
     ibm_disk_type    = "Premium_LRS"
-    data_disk_size  = "300"
+    data_disk_size  = "500"
     data_disk_type  = "Premium_LRS"
     enable_accelerated_networking = "false"
   }
