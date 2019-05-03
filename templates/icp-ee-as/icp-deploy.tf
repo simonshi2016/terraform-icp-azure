@@ -19,6 +19,8 @@ locals {
   ssh_key = "${tls_private_key.installkey.private_key_pem}"
   image_location   = "${var.image_location != "default" && substr(var.image_location,0,5) == "https" ? var.image_location : 
                         var.image_location != "default" ? "${element(concat(azurerm_storage_blob.icpimage.*.url, list("")),0)}" : ""}"
+  image_location_docker = "${var.image_location_docker != "default" && substr(var.image_location_docker,0,5) == "https" ? var.image_location_docker : 
+                        var.image_location_docker != "default" ? "${element(concat(azurerm_storage_blob.icpdocker.*.url, list("")),0)}" : ""}"
   cluster_dependency = "${length(concat(azurerm_virtual_machine.boot.*.id, azurerm_virtual_machine.master.*.id, azurerm_virtual_machine.worker.*.id, azurerm_virtual_machine.management.*.id, null_resource.wait_nodes_ready.*.id))}"
 }
 

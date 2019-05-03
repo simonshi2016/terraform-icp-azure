@@ -19,6 +19,12 @@ data "template_file" "common_config" {
     - name: root
       ssh_authorized_keys:
         - ${tls_private_key.installkey.public_key_openssh}
+${var.os_image == "rhel" ? "
+  bootcmd:
+    - sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+    - setenforce permissive
+    - systemctl disable firewalld
+" : "" }
 EOF
 }
 
@@ -184,8 +190,13 @@ write_files:
   encoding: b64
   content: ${base64encode(file("${path.module}/load_package.sh"))}
 mounts:
-- [ ${element(split(":", azurerm_storage_share.icpregistry.url), 1)}, /var/lib/registry, cifs, "nofail,credentials=/etc/smbcredentials/icpregistry.cred,dir_mode=0777,file_mode=0777,serverino" ]
+${var.os_image == "ubuntu" ? "
+- [ ${element(split(":", azurerm_storage_share.icpregistry.url), 1)}, /var/lib/registry, cifs, \"nofail,credentials=/etc/smbcredentials/icpregistry.cred,dir_mode=0777,file_mode=0777,serverino\" ]
+" : "
+- [ ${element(split(":", azurerm_storage_share.icpregistry.url), 1)}, /var/lib/registry, cifs, \"nofail,vers=2.1,credentials=/etc/smbcredentials/icpregistry.cred,dir_mode=0777,file_mode=0777,serverino\" ]
+" }
 EOF
+
   vars {
     username= "${azurerm_storage_account.infrastructure.name}"
     password= "${azurerm_storage_account.infrastructure.primary_access_key}"
@@ -196,12 +207,13 @@ data "template_file" "master_load_tarball" {
   count = "${var.master["nodes"]}"
   template = <<EOF
 #!/bin/bash
-/tmp/load_package.sh $${image_location_icp} $${image_location_key} ${var.icp_inception_image} $${master_idx}
+/tmp/load_package.sh $${image_location_docker} $${image_location_icp} $${image_location_key} ${var.icp_inception_image} $${master_idx}
 EOF
 
   vars {
     master_idx = "${count.index}"
     image_location_icp="${local.image_location}"
+    image_location_docker="${local.image_location_docker}"
     image_location_key="${local.image_location_key}"
   }
 }
@@ -212,7 +224,7 @@ data "template_file" "master_script" {
 while ! sudo mount | grep '/var/lib/registry' > /dev/null 2>&1;
 do
   sudo mount /var/lib/registry
-  sleep 2
+  sleep 5
 done
 EOF
 }
@@ -276,14 +288,13 @@ data "template_cloudinit_config" "masterconfig" {
 
   part {
     content_type = "text/x-shellscript"
-    content      = "${element(data.template_file.master_load_tarball.*.rendered,count.index)}"
+    content      = "${data.template_file.master_script.rendered}"
   }
 
   part {
     content_type = "text/x-shellscript"
-    content      = "${data.template_file.master_script.rendered}"
+    content      = "${element(data.template_file.master_load_tarball.*.rendered,count.index)}"
   }
-
 }
 
 data "template_cloudinit_config" "workerconfig" {

@@ -109,7 +109,7 @@ resource "azurerm_virtual_machine" "boot" {
 ## Create Master VM
 ##################################
 resource "azurerm_virtual_machine" "master" {
-  depends_on            = ["azurerm_storage_blob.icpimage"]
+  depends_on            = ["azurerm_storage_blob.icpdocker","azurerm_storage_blob.icpimage"]
   count                 = "${var.master["nodes"]}"
   name                  = "${var.master["name"]}${count.index + 1}"
   location              = "${var.location}"
@@ -374,7 +374,7 @@ resource "azurerm_virtual_machine" "management" {
 ## Create Worker VM
 ##################################
 resource "azurerm_virtual_machine" "worker" {
-  depends_on            = ["azurerm_storage_blob.icpimage"]
+#  depends_on            = ["azurerm_storage_blob.icpimage"]
   count                 = "${var.worker["nodes"]}"
   name                  = "${var.worker["name"]}${count.index + 1}"
   location              = "${var.location}"

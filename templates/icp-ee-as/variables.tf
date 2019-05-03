@@ -279,6 +279,11 @@ variable "image_location_icp4d" {
   default   = "default"
 }
 
+variable "image_location_docker" {
+  description = "Location of ICP docker image"
+  default   = "default"
+}
+
 variable "image_location_user" {
   description = "Http Username of ICP image tarball. "
   default   = ""
