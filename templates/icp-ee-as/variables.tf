@@ -74,7 +74,7 @@ variable "disable_password_authentication" {
 }
 variable "os_image" {
   description = "Select from Ubuntu (ubuntu) or RHEL (rhel) for the Operating System"
-  default     = "ubuntu"
+  default     = "rhel"
 }
 
 variable "os_image_map" {
