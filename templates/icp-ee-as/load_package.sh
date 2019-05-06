@@ -12,6 +12,15 @@ function log() {
     echo "$(date): $1" | tee -a $logfile
 }
 
+function install_azcopy() {
+    if ! which azcopy > /dev/null 2>&1;then
+        log "installing azcopy..."
+        wget -O azcopy.tar.gz https://aka.ms/downloadazcopylinux64
+        tar -xf azcopy.tar.gz
+        sudo ./install.sh > /dev/null
+    fi
+}
+
 function ubuntu_docker_install {
     docker_image=$1
     docker_version=$2
@@ -51,6 +60,7 @@ function rhel_docker_install {
     docker_install_dir=/tmp/icp-docker
     mkdir -p $docker_install_dir
     docker_filename=$(basename $image_location_docker)
+    install_azcopy
     azcopy --source $image_location_docker --source-key $image_location_key --destination $docker_install_dir/$docker_filename > /dev/null
 
     chmod a+x $docker_install_dir/$docker_filename
@@ -92,15 +102,11 @@ elif [[ "$os_release" == "RHEL" ]];then
 fi
 
 if [[ "$image_location" != "" ]] && [[ "$image_location_key" != "" ]];then
-    log "installing azcopy..."
-
-    wget -O azcopy.tar.gz https://aka.ms/downloadazcopylinux64
-    tar -xf azcopy.tar.gz
-    sudo ./install.sh > /dev/null
 
     log "downloading image..."
     image_file="$(basename $image_location)"
     mkdir -p /opt/ibm/cluster/images
+    install_azcopy
     azcopy --source $image_location --source-key $image_location_key --destination /opt/ibm/cluster/images/$image_file > /dev/null
 
     log "loading package..."

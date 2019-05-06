@@ -223,8 +223,12 @@ data "template_file" "master_script" {
 #!/bin/bash
 while ! sudo mount | grep '/var/lib/registry' > /dev/null 2>&1;
 do
+  if ! sudo yum list installed cifs-utils > /dev/null 2>&1;then
+    sudo yum install -y cifs-utils nfs-common python-yaml
+  fi
+  
   sudo mount /var/lib/registry
-  sleep 5
+  sleep 10
 done
 EOF
 }
