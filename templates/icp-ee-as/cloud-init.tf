@@ -23,7 +23,7 @@ ${var.os_image == "rhel" ? "
   bootcmd:
     - sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
     - setenforce permissive
-    - systemctl disable firewalld
+    - systemctl disable firewalld && systemctl stop firewalld
 " : "" }
 EOF
 }
