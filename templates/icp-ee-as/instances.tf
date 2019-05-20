@@ -150,7 +150,6 @@ resource "azurerm_virtual_machine" "master" {
     lun               = 1
   }
 
- # data disk
   storage_data_disk {
     name              = "${var.master["name"]}-ibmdisk-${count.index + 1}"
     managed_disk_type = "${var.master["ibm_disk_type"]}"
@@ -160,6 +159,15 @@ resource "azurerm_virtual_machine" "master" {
     lun               = 2
   }
 
+  storage_data_disk {
+    name              = "${var.master["name"]}-datadisk-${count.index + 1}"
+    managed_disk_type = "${var.master["data_disk_type"]}"
+    disk_size_gb      = "${var.worker["nodes"] == 0 ? var.master["data_disk_size"] : 1}"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    lun               = 3
+  }
+
   # ETCD Data disk
   storage_data_disk {
     name              = "${var.master["name"]}-etcddata-${count.index + 1}"
@@ -167,7 +175,7 @@ resource "azurerm_virtual_machine" "master" {
     disk_size_gb      = "${var.master["etcd_data_size"]}"
     caching           = "ReadWrite"
     create_option     = "Empty"
-    lun               = 3
+    lun               = 4
   }
 
   # ETCD WAL disk
@@ -177,7 +185,7 @@ resource "azurerm_virtual_machine" "master" {
     disk_size_gb      = "${var.master["etcd_wal_size"]}"
     caching           = "ReadWrite"
     create_option     = "Empty"
-    lun               = 4
+    lun               = 5
   }
 
   os_profile {

@@ -42,18 +42,37 @@ echo "virtual_ip_address_2=${lb}" >> /tmp/wdp.conf
 
 master1_node=${masters[0]}
 
+master4all=${#masters[@]}
+for i in ${masters[@]};do
+    for j in ${workers[@]};do
+        if [[ "$i" == "$j" ]];then
+            ((master4all--))
+            break
+        fi
+    done
+done
+# master4all == 0 : yes
+prefix=""
 for((i=0;i<${#masters[@]};i++));do
-    echo "master_node_$((i+1))=${masters[i]}" >> /tmp/wdp.conf
-    echo "master_node_path_$((i+1))=/ibm" >> /tmp/wdp.conf
+	if [[ $master4all -ne 0 ]];then
+		prefix="master_"
+	fi
+    echo "${prefix}node_$((i+1))=${masters[i]}" >> /tmp/wdp.conf
+    echo "${prefix}node_path_$((i+1))=/ibm" >> /tmp/wdp.conf
+    if [[ $master4all -eq 0 ]] && [[ "$nfs_mount" == "" ]];then
+		echo "node_data_$((i+1))=/data" >> /tmp/wdp.conf
+	fi
 done
 
-for((i=0;i<${#workers[@]};i++));do
-    echo "worker_node_$((i+1))=${workers[i]}" >> /tmp/wdp.conf
-    if [[ "$nfs_mount" == "" ]] && [[ $i -lt 3 ]];then
-        echo "worker_node_data_$((i+1))=/data" >> /tmp/wdp.conf
-    fi
-    echo "worker_node_path_$((i+1))=/ibm" >> /tmp/wdp.conf
-done
+if [[ $master4all -ne 0 ]];then
+    for((i=0;i<${#workers[@]};i++));do
+        echo "worker_node_$((i+1))=${workers[i]}" >> /tmp/wdp.conf
+        if [[ "$nfs_mount" == "" ]] && [[ $i -lt 3 ]];then
+            echo "worker_node_data_$((i+1))=/data" >> /tmp/wdp.conf
+        fi
+        echo "worker_node_path_$((i+1))=/ibm" >> /tmp/wdp.conf
+    done
+fi
 
 if [[ "$nfs_mount" != "" ]];then
     echo $nfs_mount | awk -F: '{print "nfs_server="$1"\nnfs_dir="$2}' >> /tmp/wdp.conf

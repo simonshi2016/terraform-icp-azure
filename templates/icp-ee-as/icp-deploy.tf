@@ -35,7 +35,9 @@ module "icpprovision" {
 
   icp-host-groups = {
     master      = ["${azurerm_network_interface.master_nic.*.private_ip_address}"]
-    worker      = ["${azurerm_network_interface.worker_nic.*.private_ip_address}"]
+    worker       = "${slice(
+      concat(azurerm_network_interface.worker_nic.*.private_ip_address, azurerm_network_interface.master_nic.*.private_ip_address),
+      0, var.worker["nodes"] > 0 ? length(azurerm_network_interface.worker_nic.*.private_ip_address) : length(azurerm_network_interface.master_nic.*.private_ip_address))}"
     proxy       = "${slice(
       concat(azurerm_network_interface.proxy_nic.*.private_ip_address, azurerm_network_interface.master_nic.*.private_ip_address),
       0, var.proxy["nodes"] > 0 ? length(azurerm_network_interface.proxy_nic.*.private_ip_address) : length(azurerm_network_interface.master_nic.*.private_ip_address))}"
@@ -123,8 +125,8 @@ module "icpprovision" {
           "routeTableName"      = "${azurerm_route_table.routetb.name}"
           "cloudProviderBackoff"        = "false"
           "loadBalancerSku"             = "Standard"
-          "primaryAvailabilitySetName"  = "${basename(element(azurerm_virtual_machine.worker.*.availability_set_id, 0))}"# "workers_availabilityset"
-          "securityGroupName"           = "${azurerm_network_security_group.worker_sg.name}"# "hktest-worker-sg"
+          "primaryAvailabilitySetName"  = "${basename(element(concat(azurerm_virtual_machine.worker.*.availability_set_id,azurerm_virtual_machine.master.*.availability_set_id),0))}"# "workers_availabilityset"
+          "securityGroupName"           = "${var.worker["nodes"] == 0 ? "${azurerm_network_security_group.master_sg.name}" : azurerm_network_security_group.worker_sg.name}"# "hktest-worker-sg"
           "excludeMasterFromStandardLB" = "true"
           "useManagedIdentityExtension" = "false"
       }

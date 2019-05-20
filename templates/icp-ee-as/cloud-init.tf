@@ -4,6 +4,7 @@ data "template_file" "common_config" {
   #cloud-config
   package_upgrade: true
   packages:
+    - cloud-utils-growpart
     - cifs-utils
     - nfs-common
     - python-yaml
@@ -24,6 +25,8 @@ ${var.os_image == "rhel" ? "
     - sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
     - setenforce permissive
     - systemctl disable firewalld && systemctl stop firewalld
+  runcmd:
+    - growpart /dev/sda 2 && xfs_growfs /dev/sda2
 " : "" }
 EOF
 }
@@ -60,8 +63,8 @@ data "template_file" "etcd_disk" {
 #!/bin/bash
 sudo mkdir -p /var/lib/etcd
 sudo mkdir -p /var/lib/etcd-wal
-etcddisk=$(ls /dev/disk/azure/*/lun3)
-waldisk=$(ls /dev/disk/azure/*/lun4)
+etcddisk=$(ls /dev/disk/azure/*/lun4)
+waldisk=$(ls /dev/disk/azure/*/lun5)
 
 sudo parted -s -a optimal $etcddisk mklabel gpt -- mkpart primary xfs 1 -1
 sudo parted -s -a optimal $waldisk mklabel gpt -- mkpart primary xfs 1 -1
@@ -282,6 +285,11 @@ data "template_cloudinit_config" "masterconfig" {
   part {
     content_type = "text/x-shellscript"
     content      = "${data.template_file.ibm_disk.rendered}"
+  }
+
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${var.worker["nodes"] == 0 ? data.template_file.data_disk.rendered : "echo -n"}"
   }
 
   # Setup the icp registry share
