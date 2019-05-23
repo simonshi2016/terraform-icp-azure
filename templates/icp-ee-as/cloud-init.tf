@@ -4,7 +4,9 @@ data "template_file" "common_config" {
   #cloud-config
   package_upgrade: true
   packages:
+  ${var.os_image == "rhel" ? "
     - cloud-utils-growpart
+  " : "" }
     - cifs-utils
     - nfs-common
     - python-yaml
@@ -226,9 +228,11 @@ data "template_file" "master_script" {
 #!/bin/bash
 while ! sudo mount | grep '/var/lib/registry' > /dev/null 2>&1;
 do
+${var.os_image == "rhel" ? "
   if ! sudo yum list installed cifs-utils > /dev/null 2>&1;then
     sudo yum install -y cifs-utils nfs-common python-yaml
   fi
+" : "" }
   
   sudo mount /var/lib/registry
   sleep 10

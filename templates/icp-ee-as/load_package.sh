@@ -44,9 +44,9 @@ function ubuntu_docker_install {
     stable"
 
     sudo apt-get -q update
-    sudo apt-get -y -q install ${docker_image}${docker_version}
+    sudo apt-get -y -q install ${docker_image} ${docker_version}
     if [[ $? -gt 0 ]]; then
-        log "Error installing ${docker_image}${docker_version}"
+        log "Error installing ${docker_image} ${docker_version}"
         exit 1
     fi
 }
@@ -84,7 +84,7 @@ function rhel_docker_install {
 
 if grep -i '^name="red hat' /etc/os-release > /dev/null;then
     os_release="RHEL"
-elif grep -i '^name="Ubuntu' > /dev/null;then
+elif grep -i '^name="Ubuntu' /etc/os-release > /dev/null;then
     os_release="Ubuntu"
 else
     log "OS not supported"

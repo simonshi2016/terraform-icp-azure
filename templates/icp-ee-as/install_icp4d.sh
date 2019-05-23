@@ -52,11 +52,37 @@ if [[ -d $ICP4D_MODULES ]] && [[ -z "$(ls -A $ICP4D_MODULES)" ]];then
     rm -rf $ICP4D_MODULES
 fi
 
+function check_install() {
+    local pidFile=/var/run/icp4d.pid
+
+    while [[ -f $pidFile ]];do
+        if which docker > /dev/null 2>&1 && docker ps | grep dp-installer > /dev/null 2>&1;then
+            docker_logs=$(docker logs --tail 10 dp-installer | grep -Ei 'fail' | grep -Ei 'retry' | grep -Ei 'skip')
+            if [[ -n "$docker_logs" ]];then
+                echo "ICP4D Installer experiencing issue and waiting for user input, You may review the installer log under /ibm/InstallPackage/tmp"
+                kill -9 $(cat $pidFile)
+                rm -rf $pidFile
+                break
+            fi
+        fi
+        sleep 10
+    done
+}
+
 echo "installing icp4d..."
 cd /ibm
 chmod a+x $icp4d_image
+
+pidFile=/var/run/icp4d.pid
+rm -rf $pidFile
+echo $$ > $pidFile
+check_install &
+
 ./$icp4d_image --load-balancer --accept-license
 if [[ $? -ne 0 ]];then
     echo "error installing icp4d,please check log under /ibm/InstallPacakge/tmp for details"
+    rm -rf $pidFile
     exit 1
 fi
+
+rm -rf $pidFile
