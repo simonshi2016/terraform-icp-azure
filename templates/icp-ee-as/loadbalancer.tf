@@ -54,6 +54,19 @@ resource "azurerm_lb_rule" "master_rule" {
   probe_id                       = "${element(concat(azurerm_lb_probe.master_lb_port_probe.*.id,list("")), count.index)}"
 }
 
+# To activate SNAT outbound port on LB for NTP
+resource "azurerm_lb_rule" "master_rule_udp" {
+  count                          = "${length(var.master_lb_ports_udp)}"
+  resource_group_name            = "${local.rg_name}"
+  loadbalancer_id                = "${azurerm_lb.controlplane.id}"
+  name                           = "Masterport${var.master_lb_ports_udp[count.index]}"
+  protocol                       = "Udp"
+  frontend_port                  = "${var.master_lb_ports_udp[count.index]}"
+  backend_port                   = "${var.master_lb_ports_udp[count.index]}"
+  backend_address_pool_id        = "${azurerm_lb_backend_address_pool.masterlb_pool.id}"
+  frontend_ip_configuration_name = "MasterIPAddress"
+}
+
 resource "azurerm_lb_backend_address_pool" "masterlb_pool" {
   resource_group_name = "${local.rg_name}"
   loadbalancer_id     = "${azurerm_lb.controlplane.id}"

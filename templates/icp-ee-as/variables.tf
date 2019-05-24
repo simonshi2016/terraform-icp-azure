@@ -227,6 +227,12 @@ variable "lb_probe_load_distribution" {
   default     = "SourceIPProtocol"
 }
 
+variable "master_lb_ports_udp" {
+  description = "Udp Ports on the master load balancer to listen to"
+  type        = "list"
+  default     = ["123"]
+}
+
 ## IAM options for kubelet and controller manager
 variable "aadClientId" {
   description = "aadClientId to be provided to kubernetes controller manager"
