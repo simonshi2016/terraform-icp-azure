@@ -209,6 +209,8 @@ locals {
   image_location_key  ="${var.image_location_key != "" ? var.image_location_key : 
                           var.image_location_icp4d != "default" ? "${azurerm_storage_account.blobstorage.primary_access_key}" : ""}"
   image_location_icp4d_local="${var.image_location_icp4d != "default" && substr(var.image_location_icp4d,0,1) == "/" ? "${var.image_location_icp4d}" : ""}"
+  clusterIps      = "${join(",", distinct(concat(azurerm_network_interface.master_nic.*.private_ip_address,azurerm_network_interface.worker_nic.*.private_ip_address,
+                        azurerm_network_interface.proxy_nic.*.private_ip_address,azurerm_network_interface.management_nic.*.private_ip_address)))}"
 }
 
 # wait until icp4d is done, create resource only when we upload icp4d
@@ -217,7 +219,7 @@ resource "null_resource" "upload_icp4d_modules" {
   depends_on=["azurerm_storage_blob.icp4dimage"]
 
   provisioner "local-exec" {
-    command = "bash -x ./upload_modules.sh '${local.image_location_icp4d_local}' '${local.image_location_icp4d}' '${local.image_location_key}'"
+    command = "bash ./upload_modules.sh '${local.image_location_icp4d_local}' '${local.image_location_icp4d}' '${local.image_location_key}'"
   }
 }
 
@@ -234,9 +236,14 @@ resource "null_resource" "wait_nodes_ready" {
     bastion_host="${element(azurerm_public_ip.bootnode_pip.*.ip_address,0)}"
   }
 
+  provisioner "file" {
+    source="./waitfornodes.sh"
+    destination="/tmp/waitfornodes.sh"
+  }
+
   provisioner "remote-exec" {
     inline = [
-      "while [ ! -f /var/lib/cloud/instance/boot-finished ];do sleep 30; done"
+      "sudo bash /tmp/waitfornodes.sh ${local.clusterIps} ${local.ssh_user} '${local.ssh_key}' ${var.icp_inception_image}"
     ]
   }
 }
@@ -258,7 +265,7 @@ resource "null_resource" "master_icp4d_install" {
     inline = [
       "echo ${module.icpprovision.install_complete}",
       "sudo bash /tmp/generate_wdp_conf.sh '${azurerm_public_ip.master_pip.fqdn}' '${local.ssh_user}' '${local.ssh_key}' '${var.nfsmount}'",
-      "sudo bash -x /tmp/install_icp4d.sh '${local.image_location_icp4d}' '${local.image_location_key}'"
+      "sudo bash /tmp/install_icp4d.sh '${local.image_location_icp4d}' '${local.image_location_key}'"
     ]
   }
 }

@@ -1,5 +1,4 @@
 #!/bin/bash
-
 image_location_docker=$1
 image_location=$2
 image_location_key=$3
@@ -77,7 +76,7 @@ function rhel_docker_install {
         fi
     done
 
-    if [[ $n -gt 0 ]];then
+    if [[ $n -eq 0 ]];then
         log "Docker installed but hasn't started in 60s"
     fi
 }
@@ -113,25 +112,4 @@ if [[ "$image_location" != "" ]] && [[ "$image_location_key" != "" ]];then
     cd /opt/ibm/cluster/images/
     tar -xzf $image_file -O | docker load >&2
     log "image loaded"
-fi
-
-if [[ "$node_idx" == "0" ]];then
-    log "waiting for nodes ready..."
-    myip=`ip route get 8.8.8.8 | awk 'NR==1 {print $NF}'`
-
-    docker run \
-    -e ANSIBLE_HOST_KEY_CHECKING=false \
-    -v /opt/ibm/cluster:/installer/cluster \
-    --entrypoint ansible \
-    --net=host \
-    -t \
-    $icp_inception_image \
-    -i /installer/cluster/hosts all:\!$myip \
-    --private-key /installer/cluster/ssh_key \
-    -u icpdeploy \
-    -b \
-    -m wait_for \
-    -a "path=/var/lib/cloud/instance/boot-finished timeout=18000" | tee -a $logfile
-
-    log "nodes ready"
 fi
